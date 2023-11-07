@@ -5,13 +5,13 @@
             <item name="EN" href="../index.html" />
         </links>
         
-        <menu name="Plugin liquibase-plugin">
+        <menu name="Plugin liquibase">
             <item name="Accueil" href="index.html"/>
         </menu>
         
         <menu name="Téléchargements" inherit="bottom" >
-            <item name="Versions stables" href="../../../stable_builds/plugins/plugin-liquibase-plugin/"/>
-            <item name="Nightly builds" href="../../../nightly_builds/plugins/plugin-liquibase-plugin/" />
+            <item name="Versions stables" href="../../../stable_builds/plugins/plugin-liquibase/"/>
+            <item name="Nightly builds" href="../../../nightly_builds/plugins/plugin-liquibase/" />
         </menu>
 
     <!--

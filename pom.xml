@@ -53,8 +53,8 @@
 	</dependencies>
 
 	<properties>
-		<componentName>liquibase-plugin</componentName>
-		<jiraProjectName>LIQUIBASEPLUGIN</jiraProjectName>
+		<componentName>liquibase</componentName>
+		<jiraProjectName>LIQUIBASE</jiraProjectName>
 		<jiraComponentId></jiraComponentId>
 	</properties>
 </project>

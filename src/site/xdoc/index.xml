@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document>
     <properties>
-        <title>Plugin liquibase-plugin</title>
+        <title>Plugin liquibase</title>
     </properties>
     <head>
         <!-- Keywords example : "cms, authentication, cms, workflow, seo, collaborative, ..." 
@@ -9,10 +9,10 @@
         <meta name="keywords" content="" />
     </head>
     <body>
-        <section name="Plugin liquibase-plugin">
+        <section name="Plugin liquibase">
             <!--
             <p>
-                <img src="images/liquibase-plugin.png" />
+                <img src="images/liquibase.png" />
             </p>
             -->
             <subsection name="Introduction">
