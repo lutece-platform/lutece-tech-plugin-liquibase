@@ -60,20 +60,4 @@ public class TestIncludeAllFilter implements IncludeAllFilter
         AppLogService.info("LiquibaseRunner : file {} {}included", changeLogPath, include ? "" : "NOT ");
         return include;
     }
-
-    // FIXME : create a JUnit
-    public static void main(String[] args)
-    {
-        final String[] files = new String[] { "sql/plugins/testpourliquibase/plugin/create_db_testpourliquibase.sql",
-                "sql/plugins/testpourliquibase/upgrade/update_db_testpourliquibase-0.0.9-1.0.0.sql", "sql/upgrade/update_db_lutece_core-2.3.0-2.3.1.sql",
-                "sql/init_db_lutece_core.sql", "sql/plugins/regularexpression/upgrade/update_db_regularexpression_3.0.0_3.0.1.sql",
-                "sql/upgrade/update_db_lutece_core-7.0.9-7.0.10.sql",
-                "sql/plugins/bignumberplugin/upgrade/update_db_whatever-654.123.789-78999.6546546.321321321.sql" };
-        for (String file : files)
-        {
-            System.out.println("file : " + file);
-            SqlPathInfo info = SqlPathInfo.parse(file);
-            System.out.println("    info : " + info);
-        }
-    }
 }
