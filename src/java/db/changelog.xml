@@ -11,5 +11,5 @@
     http://www.liquibase.org/xml/ns/dbchangelog 
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd
     ">
-	<includeAll path="sql" filter="fr.paris.lutece.plugins.liquibase.TestIncludeAllFilter"></includeAll>
+	<includeAll path="sql" filter="fr.paris.lutece.plugins.liquibase.filters.TestIncludeAllFilter"></includeAll>
 </databaseChangeLog>
