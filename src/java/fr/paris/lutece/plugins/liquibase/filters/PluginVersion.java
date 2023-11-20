@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Compares versions.
+ * Compares versions. Immutable.
  * 
  * A version is a string such as "1.0.0", i.e. a dot separated list of integers. non-integer components are not supported.
  *
@@ -24,11 +24,16 @@ public class PluginVersion implements Comparable<PluginVersion>
     {
         if (version != null)
         {
-            if (acceptSnapshots && version.endsWith(SNAPSHOT))
+            if (acceptSnapshots && version.endsWith(SNAPSHOT))// else : some runtime exception when parsing ints
                 version = version.substring(0, version.length() - SNAPSHOT.length());
             for (String element : version.split("\\."))
                 components.add(Integer.parseInt(element));
         }
+    }
+
+    public List<Integer> components()
+    {
+        return new ArrayList<>(components);
     }
 
     @Override
