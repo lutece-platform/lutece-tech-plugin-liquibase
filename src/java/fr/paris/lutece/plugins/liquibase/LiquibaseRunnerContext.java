@@ -97,7 +97,7 @@ public class LiquibaseRunnerContext
     public static PluginVersion pluginVersion(String pluginName) throws SQLException
     {
         String version = DatastoreService.getDataValue(pluginVersionKey(pluginName), null);
-        if (version == null || CORE_PLUGIN_NAME.equals(pluginName))
+        if (version == null && CORE_PLUGIN_NAME.equals(pluginName))
             version = "" + Integer.MAX_VALUE;
         return PluginVersion.of(version);
     }
