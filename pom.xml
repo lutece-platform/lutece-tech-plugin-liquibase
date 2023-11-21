@@ -50,6 +50,14 @@
 			<artifactId>liquibase-core</artifactId>
 			<version>4.24.0</version>
 		</dependency>
+
+		<!-- plug slf4j into liquibase logging-->
+		<!-- slf4j implementation is log4j-slf4j-impl, defined in lutece-core -->
+		<dependency>
+			<groupId>com.mattbertolini</groupId>
+			<artifactId>liquibase-slf4j</artifactId>
+			<version>4.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<properties>
