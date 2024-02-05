@@ -52,7 +52,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
                     // only if all went as planned
                     LiquibaseRunnerContext.close();
                 }
-            } catch (Exception e)
+            } catch (Throwable e)
             {
                 AppLogService.error("LiquibaseRunner failed", e);
             }
