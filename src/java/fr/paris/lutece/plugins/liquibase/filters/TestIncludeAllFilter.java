@@ -3,6 +3,7 @@ package fr.paris.lutece.plugins.liquibase.filters;
 import java.sql.SQLException;
 
 import fr.paris.lutece.plugins.liquibase.LiquibaseRunnerContext;
+import fr.paris.lutece.portal.service.plugin.PluginFile;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import liquibase.changelog.IncludeAllFilter;
@@ -55,7 +56,11 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                 }
             }
             // in all cases, store the current version in the datastore
-            LiquibaseRunnerContext.setPluginVersion(pluginName, PluginService.getPluginMeta(pluginName).getVersion());
+            PluginFile pluginMeta = PluginService.getPluginMeta(pluginName);
+            if (pluginMeta == null)
+                AppLogService.error("LiquibaseRunner. No plugin metadata for " + pluginName);
+            else
+                LiquibaseRunnerContext.setPluginVersion(pluginName, pluginMeta.getVersion());
         }
         AppLogService.info("LiquibaseRunner : file {} {}included", changeLogPath, include ? "" : "NOT ");
         return include;
