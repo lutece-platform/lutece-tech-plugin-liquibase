@@ -64,9 +64,9 @@ public class LiquibaseRunnerContext
     static void init(Connection connection) throws SQLException
     {
         LiquibaseRunnerContext.connection = connection;
-        final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER);
+        final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
         liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
-        final String emptyDbRequest = AppPropertiesService.getProperty(SQL__EMPTY_DB);
+        final String emptyDbRequest = AppPropertiesService.getProperty(SQL__EMPTY_DB, "SELECT count(*) FROM information_schema.tables where table_schema=database();");
         emptyDb = runQuery(emptyDbRequest, r -> r.getInt(1)) == 0;
         AppLogService.info("LiquibaseRunnerContext liquibaseNeverRan : {} , emptyDb : {}", liquibaseNeverRan, emptyDb);
     }
