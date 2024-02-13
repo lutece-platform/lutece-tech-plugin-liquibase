@@ -28,7 +28,7 @@ public class TestIncludeAllFilter implements IncludeAllFilter
         } else
         {
             AppLogService.debug("LiquibaseRunner testing file with info " + info);
-            final String pluginName = info.getPlugin();
+            final String pluginName = info.getFullPluginName();
             // empty DB : only "create/init" files
             if (LiquibaseRunnerContext.isEmptyDb())
                 include = info.isCreate();

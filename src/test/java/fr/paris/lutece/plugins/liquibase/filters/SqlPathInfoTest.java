@@ -4,7 +4,6 @@ import junit.framework.TestCase;
 
 public class SqlPathInfoTest extends TestCase
 {
-    // FIXME : create a JUnit
     public static void main(String[] args)
     {
         final String[] files = new String[] { "sql/plugins/testpourliquibase/plugin/create_db_testpourliquibase.sql",
@@ -17,7 +16,8 @@ public class SqlPathInfoTest extends TestCase
                 "sql/plugins/profiles/upgrades/upgrade_db_profiles-1.0.3-1.0.4.sql",
                 "sql/plugins/workflow/modules/formspdf/upgrade/update_db_workflow-formspdf-1.0.0-1.0.1.sql",
                 "sql/plugins/elasticdata-forms/plugin/create_db_elasticdata-forms.sql",
-                "sql/plugins/forms/upgrade/update_db_forms-2.3.0-2.3.1.sql"};
+                "sql/plugins/forms/upgrade/update_db_forms-2.3.0-2.3.1.sql",
+                "sql/plugins/forms/modules/template/upgrade/update_db_forms_template-1.0.2-1.0.4.sql"};
         for (String file : files)
         {
             System.out.println("file : " + file);
@@ -47,6 +47,14 @@ public class SqlPathInfoTest extends TestCase
         SqlPathInfo info = SqlPathInfo.parse("sql/plugins/bignumberplugin/upgrade/update_db_whatever-654.123.789-78999.6546546.321321321.sql");
         assertEquals(info.isCreate(), false);
         assertTrue(info.getDstVersion().components().get(2) == 321321321);
+    }
+
+    public void testModule()
+    {
+        SqlPathInfo info = SqlPathInfo.parse("sql/plugins/forms/modules/template/upgrade/update_db_forms_template-1.0.2-1.0.4.sql");
+        assertEquals(info.isCreate(), false);
+        assertEquals("forms", info.getPlugin());
+        assertEquals("forms-template", info.getFullPluginName());
     }
 
     public void testUpdateCore()
