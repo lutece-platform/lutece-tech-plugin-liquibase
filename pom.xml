@@ -50,6 +50,11 @@
 			<artifactId>liquibase-core</artifactId>
 			<version>4.24.0</version>
 		</dependency>
+		<dependency>
+		    <groupId>fr.paris.lutece.tools</groupId>
+		    <artifactId>library-sql-utils</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 
 		<!-- plug slf4j into liquibase logging-->
 		<!-- slf4j implementation is log4j-slf4j-impl, defined in lutece-core -->
