@@ -8,10 +8,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import fr.paris.lutece.plugins.liquibase.filters.PluginVersion;
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+import fr.paris.lutece.utils.sql.PluginVersion;
 
 /**
  * Static context holder for shared data during a liquibase run.
