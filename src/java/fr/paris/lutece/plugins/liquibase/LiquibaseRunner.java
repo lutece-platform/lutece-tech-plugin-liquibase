@@ -39,6 +39,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
             AppLogService.info("LiquibaseRunner starting");
             try
             {
+                PluginMeta.preloadMeta();// load plugin versions from XML files
                 // Here we get a default connection from the default pool
                 // TODO (or not) :
                 // - loop on pools
