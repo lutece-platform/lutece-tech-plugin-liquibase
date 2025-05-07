@@ -6,7 +6,7 @@
 	<parent>
 		<artifactId>lutece-global-pom</artifactId>
 		<groupId>fr.paris.lutece.tools</groupId>
-		<version>6.1.0</version>
+		<version>7.0.1</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -42,18 +42,18 @@
 		<dependency>
 			<groupId>fr.paris.lutece</groupId>
 			<artifactId>lutece-core</artifactId>
-			<version>7.0.13-SNAPSHOT</version>
+			<version>[7.1.4-SNAPSHOT,7.9.9)</version>
 			<type>lutece-core</type>
 		</dependency>
 		<dependency>
 			<groupId>org.liquibase</groupId>
 			<artifactId>liquibase-core</artifactId>
-			<version>4.24.0</version>
+			<version>4.31.1</version>
 		</dependency>
 		<dependency>
 		    <groupId>fr.paris.lutece.tools</groupId>
 		    <artifactId>library-sql-utils</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>[1.0.0-SNAPSHOT,)</version>
 		</dependency>
 
 		<!-- plug slf4j into liquibase logging-->
@@ -76,4 +76,10 @@
 		<jiraProjectName>LIQUIBASE</jiraProjectName>
 		<jiraComponentId></jiraComponentId>
 	</properties>
+	<scm>
+		<connection>scm:git:https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</connection>
+		<developerConnection>scm:git:https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</developerConnection>
+		<url>https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</url>
+		<tag>HEAD</tag>
+	</scm>
 </project>
