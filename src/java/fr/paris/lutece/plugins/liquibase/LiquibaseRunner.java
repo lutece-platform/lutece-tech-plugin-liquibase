@@ -59,6 +59,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
                         AppLogService.info("LiquibaseRunner. Determining target database from connection URL : " + url);
                         helper = new SqlRegexpHelper(() -> buildProperties, SqlRegexpHelper.findDbName(url));
                     }
+                    //System.setProperty("liquibase.shouldSendAnalytics", "false");
+                     System.setProperty("liquibase.analytics.enabled", "false");
                     try (Liquibase liquibase = new Liquibase("db/changelog.xml", new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper),
                             database);)
                     {
