@@ -23,12 +23,12 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 public class LiquibaseRunner implements IEarlyInitializationService
 {
     private static final String AT_STARTUP = "liquibase.enabled.at.startup";
-    private static final String LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS = "liquibase.accept.snapshot.versions";
+  
 
     @Override
     public void process()
     {
-        PluginVersion.setAcceptSnapshots(AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS, false));
+    
         // we do not run unless explicitly told to do so
         final boolean enabledAtStartup = AppPropertiesService.getPropertyBoolean(AT_STARTUP, false);
         if (!enabledAtStartup)

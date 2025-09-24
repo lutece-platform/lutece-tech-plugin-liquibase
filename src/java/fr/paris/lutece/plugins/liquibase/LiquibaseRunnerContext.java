@@ -20,6 +20,11 @@ import fr.paris.lutece.utils.sql.PluginVersion;
  */
 public class LiquibaseRunnerContext
 {
+     /** Last run script type (create/init) */
+    public static final String LAST_RUN_SCRIPT_TYPE_CREATE="create/init";
+    /** Last run script type (update) */
+    public static final String LAST_RUN_SCRIPT_TYPE_UPDATE="update";
+    
     private static final String CORE_PLUGIN_NAME = "core";
     /**
      * This (configurable) request determines whether liquibase has ever been run or not : it tests the existence of liquibase specific tables.
@@ -34,8 +39,13 @@ public class LiquibaseRunnerContext
      */
     private static final String SQL__EMPTY_DB = "liquibase.empty.db.request";
 
-    private static boolean liquibaseNeverRan, emptyDb;
+   
+    
+    private static final String LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS = "liquibase.accept.snapshot.versions";
+    private static final String LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS = "liquibase.accept.unstable.versions";
 
+
+    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion;
     public static boolean isEmptyDb()
     {
         return emptyDb;
@@ -44,6 +54,14 @@ public class LiquibaseRunnerContext
     public static boolean isLiquibaseNeverRan()
     {
         return liquibaseNeverRan;
+    }
+    public static boolean isAcceptSnapshotVersion()
+    {
+        return bAcceptSnapshotVersion;
+    }
+    public static boolean isAcceptUnstableVersion()
+    {
+        return bAcceptUnstableVersion;
     }
 
     private static Connection connection;
@@ -63,6 +81,9 @@ public class LiquibaseRunnerContext
      */
     static void init(Connection connection) throws SQLException
     {
+        
+        bAcceptSnapshotVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS, false);
+        bAcceptUnstableVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS, false);
         LiquibaseRunnerContext.connection = connection;
         final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
         liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
@@ -102,10 +123,32 @@ public class LiquibaseRunnerContext
         return PluginVersion.of(version);
     }
 
+    /**
+     * 
+     * Looks the type of the last run script (create/init or update) in the DB.
+     * 
+     * 
+     * @param pluginName a name such as 'forms'
+     * @return the type of the last run script as a string ("create/init" or "update"), or null if not found
+     * @throws SQLException
+     */
+    public static String  pluginLastRunScriptType(String pluginName) 
+    {
+        return DatastoreService.getDataValue(pluginLastRunScriptTypeKey(pluginName), null);
+    }
+
+
     private static String pluginVersionKey(String pluginName)
     {
         return "core.plugins.status." + pluginName + ".version";
     }
+
+    private static String pluginLastRunScriptTypeKey(String pluginName)
+    {
+        return "core.plugins.status." + pluginName + ".lastRunScriptType";
+    }
+    
+
 
     /**
      * Holds a key/value pair for later insert into the datastore
@@ -151,6 +194,18 @@ public class LiquibaseRunnerContext
     public static void setPluginVersion(String pluginName, String version)
     {
         entries.add(new DatastoreEntry(pluginVersionKey(pluginName), version));
+    }
+
+
+    /**
+     * Sets the type of the last run script (create/init or update) in the datastore (later, when all SQL files have been executed)
+     * 
+     * @param pluginName
+     * @param version
+     */
+    public static void setPluginLastRunScriptType(String pluginName, String strLastRunTypeScript)
+    {
+        entries.add(new DatastoreEntry(pluginLastRunScriptTypeKey(pluginName), strLastRunTypeScript));
     }
 
     /**
