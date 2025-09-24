@@ -19,6 +19,7 @@ public class TestIncludeAllFilter implements IncludeAllFilter
     @Override
     public boolean include(String changeLogPath)
     {
+
         // no explicit check can be done here on the "file" represented by changeLogPath, since it might not be a file, but a classpath entry
         boolean include = false;
         SqlPathInfo info = SqlPathInfo.parse(changeLogPath);
@@ -35,7 +36,13 @@ public class TestIncludeAllFilter implements IncludeAllFilter
             final String pluginName = info.getFullPluginName();
             // empty DB : only "create/init" files
             if (LiquibaseRunnerContext.isEmptyDb())
+            {
                 include = info.isCreate();
+                if(include)
+                {
+                    LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE);
+                 }
+            }
             else
             {
                 try
@@ -49,11 +56,31 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                     {
                         // DB exists, liquibase already ran, but no version => that's a new plugin we're installing
                         include = info.isCreate();
+                        if(include)
+                        {
+                           LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE);
+                        }
+
                     } else if (!info.isCreate())
                     {
                         // DB exists, liquibase already ran, a version exists => run the (chosen) updates
                         include = info.getDstVersion().compareTo(alreadyInstalledVersion) > 0;
+
+                        if(!include &&  (alreadyInstalledVersion.isSnapshot()&& LiquibaseRunnerContext.isAcceptSnapshotVersion() )||(alreadyInstalledVersion.isUnstable()&& LiquibaseRunnerContext.isAcceptUnstableVersion())  && LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE.equals(LiquibaseRunnerContext.pluginLastRunScriptType(pluginName)))
+                        {    // if we accept snapshot and unstable versions (rc,beta,..) include also if the dst version is an unstable or  snapshot and equals to the installed version
+                            include = info.getDstVersion().compareTo(alreadyInstalledVersion) == 0;
+                        }
+                        //finaly if we included an update script, we set the last run script type to update
+                        if(include)
+                        {
+                         LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE); 
+                        }
+  
+
                     }
+                    
+                  
+
                 } catch (SQLException e)
                 {
                     AppLogService.error("version retrieve failed for plugin " + pluginName, e);
