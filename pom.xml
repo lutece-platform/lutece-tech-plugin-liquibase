@@ -12,7 +12,7 @@
 	<artifactId>plugin-liquibase</artifactId>
 	<packaging>lutece-plugin</packaging>
 
-	<version>1.0.0-beta-01</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>Lutece liquibase plugin</name>
 
 	<repositories>
@@ -77,6 +77,6 @@
 		<connection>scm:git:https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</connection>
 		<developerConnection>scm:git:https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</developerConnection>
 		<url>https://github.com/lutece-platform/lutece-tech-plugin-liquibase.git</url>
-		<tag>plugin-liquibase-1.0.0-beta-01</tag>
+		<tag>HEAD</tag>
 	</scm>
 </project>
