@@ -1,11 +1,18 @@
 package fr.paris.lutece.plugins.liquibase;
 
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 
 import fr.paris.lutece.portal.service.database.AppConnectionService;
 import fr.paris.lutece.portal.service.init.IEarlyInitializationService;
 import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.utils.sql.PluginVersion;
 import fr.paris.lutece.utils.sql.SqlRegexpHelper;
@@ -23,7 +30,10 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 public class LiquibaseRunner implements IEarlyInitializationService
 {
     private static final String AT_STARTUP = "liquibase.enabled.at.startup";
-  
+    private static final String DRY_RUN_OUTPUT_FILE = "liquibase.dryrun.output.file";
+    private static final String DRY_RUN = "liquibase.dryrun";
+    private static final String ANALYTICS_ENABLED = "liquibase.analytics.enabled";
+    private static final String SQL_LOG_LEVEL = "liquibase.sql.logLevel";   
 
     @Override
     public void process()
@@ -31,6 +41,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
     
         // we do not run unless explicitly told to do so
         final boolean enabledAtStartup = AppPropertiesService.getPropertyBoolean(AT_STARTUP, false);
+        final boolean enabledDryRun = AppPropertiesService.getPropertyBoolean(DRY_RUN, false);
         if (!enabledAtStartup)
         {
             AppLogService.info("LiquibaseRunner not enabled at startup");
@@ -60,13 +71,33 @@ public class LiquibaseRunner implements IEarlyInitializationService
                         helper = new SqlRegexpHelper(() -> buildProperties, SqlRegexpHelper.findDbName(url));
                     }
                     //System.setProperty("liquibase.shouldSendAnalytics", "false");
-                     System.setProperty("liquibase.analytics.enabled", "false");
+                     System.setProperty("liquibase.analytics.enabled", AppPropertiesService.getProperty(ANALYTICS_ENABLED, "false"));
+                     System.setProperty("liquibase.sql.logLevel", AppPropertiesService.getProperty(SQL_LOG_LEVEL, "DEBUG"));
+
                     try (Liquibase liquibase = new Liquibase("db/changelog.xml", new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper),
                             database);)
                     {
                         LiquibaseRunnerContext.init(connection);
                         // neither the javadoc nor the tutorial are clear about an actual working replacement for update()
-                        liquibase.update(new Contexts());
+                        
+                        if( enabledDryRun )
+                        {
+                            String dryRunOutputFile = AppPropertiesService.getProperty(DRY_RUN_OUTPUT_FILE, "WEB-INF/plugins/liquibase/liquibase-dryrun.sql");
+
+                            try (FileOutputStream fos = new FileOutputStream( dryRunOutputFile.startsWith("/") ? dryRunOutputFile : AppPathService.getAbsolutePathFromRelativePath("/" + dryRunOutputFile), false);
+                                 OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+                                 )
+                            {
+                                AppLogService.info("LiquibaseRunner running in dry run mode. Output file : " + dryRunOutputFile);
+                                liquibase.update(new Contexts(), writer);
+                            }
+                            
+                        }
+                        else
+                        {
+                            AppLogService.info("LiquibaseRunner applying database changes");
+                            liquibase.update(new Contexts());
+                        }
                         // closing the context bumps plugin versions in the datastore
                         // only if all went as planned
                         LiquibaseRunnerContext.close();

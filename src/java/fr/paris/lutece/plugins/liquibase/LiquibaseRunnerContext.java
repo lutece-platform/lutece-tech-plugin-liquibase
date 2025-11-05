@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
+import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.utils.sql.PluginVersion;
@@ -45,7 +46,7 @@ public class LiquibaseRunnerContext
     private static final String LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS = "liquibase.accept.unstable.versions";
 
 
-    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion;
+    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion, bEnabledDryRun;
     public static boolean isEmptyDb()
     {
         return emptyDb;
@@ -84,6 +85,7 @@ public class LiquibaseRunnerContext
         
         bAcceptSnapshotVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS, false);
         bAcceptUnstableVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS, false);
+        bEnabledDryRun=  AppPropertiesService.getPropertyBoolean("liquibase.dryrun", false);
         LiquibaseRunnerContext.connection = connection;
         final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
         liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
@@ -99,7 +101,16 @@ public class LiquibaseRunnerContext
      */
     static void close()
     {
-        entries.stream().forEach(entry -> DatastoreService.setDataValue(entry.key, entry.value));
+      if(!bEnabledDryRun)
+      {
+          entries.stream().forEach(entry -> DatastoreService.setDataValue(entry.key, entry.value));
+          PluginService.getPluginList().stream().forEach(p -> AppLogService.info("LiquibaseRunnerContext plugin {} version {}", p.getName(), p.getVersion()));
+     }  
+     else 
+     {
+         AppLogService.info("LiquibaseRunnerContext dry run enabled, not updating datastore with plugin versions");
+     }
+
     }
 
     /**
