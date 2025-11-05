@@ -58,7 +58,7 @@
 		<dependency>
 			<groupId>com.mattbertolini</groupId>
 			<artifactId>liquibase-slf4j</artifactId>
-			<version>4.0.0</version>
+			<version>5.1.0</version>
 		</dependency>
 		<!-- Explicit dependency to use DocumentBuilderFactory -->
 		<dependency>
