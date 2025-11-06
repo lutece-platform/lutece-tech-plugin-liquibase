@@ -24,133 +24,90 @@
 			</section>
 			<section name="Configuration">
 				<p>
-					By default the plugin does nothing.
+					By default the plugin does nothing. All configurations are defined in the <code>liquibase-plugin.properties</code> file.
 				</p>
-				<p> You can declare the following property to enable the plugin: <code>
-						liquibase.enabled.at.startup=true</code>
-				</p>
-				<p> Additionally you can use this property to allow SNAPSHOT versions <code>liquibase.accept.snapshot.versions=false</code>
-				</p>
+				<subsection name="General Properties">
+					<table>
+						<tr>
+							<th>Property</th>
+							<th>Description</th>
+							<th>Default Value</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.enabled.at.startup</code></td>
+							<td>Enable the plugin execution at application startup</td>
+							<td>false</td>
+						</tr>
+						<tr>
+							<td><code>liquibase.first.run.request</code></td>
+							<td>SQL query to check if this is the first run (checks for DATABASECHANGELOG table)</td>
+							<td>select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';</td>
+						</tr>
+						<tr>
+							<td><code>liquibase.empty.db.request</code></td>
+							<td>SQL query to check if the database is empty</td>
+							<td>SELECT count(*) FROM information_schema.tables where table_schema=database();</td>
+						</tr>
+					</table>
+				</subsection>
+				<subsection name="Version Control">
+					<table>
+						<tr>
+							<th>Property</th>
+							<th>Description</th>
+							<th>Default Value</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.accept.unstable.versions</code></td>
+							<td>Allow running liquibase on update files of unstable versions (alpha, beta, rc) at every startup</td>
+							<td>false</td>
+						</tr>
+						<tr>
+							<td><code>liquibase.accept.snapshot.versions</code></td>
+							<td>Allow running liquibase on update files of snapshot versions at every startup</td>
+							<td>false</td>
+						</tr>
+					</table>
+				</subsection>
+				<subsection name="Dry Run Mode">
+					<table>
+						<tr>
+							<th>Property</th>
+							<th>Description</th>
+							<th>Default Value</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.dryrun</code></td>
+							<td>Enable dry run mode to output SQL script instead of applying changes to the database</td>
+							<td>false</td>
+						</tr>
+						<tr>
+							<td><code>liquibase.dryrun.output.file</code></td>
+							<td>Path to the output file for dry run SQL script</td>
+							<td>WEB-INF/plugins/liquibase/liquibase-dryrun.sql</td>
+						</tr>
+					</table>
+				</subsection>
+				<subsection name="Analytics and Logging">
+					<table>
+						<tr>
+							<th>Property</th>
+							<th>Description</th>
+							<th>Default Value</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.analytics.enabled</code></td>
+							<td>Enable sending analytics to Liquibase</td>
+							<td>false</td>
+						</tr>
+						<tr>
+							<td><code>liquibase.sql.logLevel</code></td>
+							<td>Set log level for SQL output (OFF, SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST, ALL, DEBUG)</td>
+							<td>DEBUG</td>
+						</tr>
+					</table>
+				</subsection>
 			</section>
-			<section name="Usage">
-				<p>This example demonstrates the necessary steps to automatically have liquibase run SQL scripts from your WAR for a new plugin at tomcat startup. <ul>
-						<li>Create a sample plugin with the needed dependencies</li>
-						<li>Run the liquibase tool to prepare the SQL scripts for automatic run</li>
-						<li>Integrate this plugin in an existing app</li>
-						<li>Run</li>
-				</ul>
-			</p>
-				<subsection name="Create a sample plugin">
-					 <p>Use the plugin wizard to generate a new plugin
-					(https://dev.lutece.paris.fr/tools/jsp/site/Portal.jsp?page=pluginwizard).</p>
- 
-<pre><![CDATA[ xml
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
-    <parent>
-        <artifactId>lutece-global-pom</artifactId>
-        <groupId>fr.paris.lutece.tools</groupId>
-        <version>6.1.0</version>
-    </parent>
-
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>fr.paris.lutece.plugins</groupId>
-
-    <artifactId>plugin-testpourliquibase</artifactId>
-    <packaging>lutece-plugin</packaging>
-    
-    <version>1.0.0-SNAPSHOT</version>
-    <name>Lutece testpourliquibase plugin</name>
-
-    <repositories>
-        <repository>
-            <id>lutece</id>
-            <name>luteceRepository</name>
-            <url>https://dev.lutece.paris.fr/maven_repository</url>
-            <layout>default</layout>
-        </repository>
-        <repository>
-            <id>luteceSnapshot</id>
-            <name>luteceSnapshot</name>
-            <url>https://dev.lutece.paris.fr/snapshot_repository</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>fr.paris.lutece</groupId>
-            <artifactId>lutece-core</artifactId>
-            <version>7.0.11-SNAPSHOT</version>
-            <type>lutece-core</type>
-        </dependency>
-    </dependencies>
-
-    <properties>
-        <componentName>testpourliquibase</componentName>
-        <jiraProjectName>TESTPOURLIQUIBASE</jiraProjectName>
-        <jiraComponentId></jiraComponentId>
-    </properties>
-</project>
-
-]]></pre>
-				<p> At the time of writing, the importants parts to make
-					this pom.xml example work are <ul>
-						<li>version 6.1.0 for the parent</li>
-						<li>version 7.0.11-SNAPSHOT for lutece-core</li>
-					</ul>
-				</p>
-			</subsection>
-			<subsection name="Run the liquibase tool">
-				<p>If you used the plugin wizard, your plugin source code has some SQL scripts ( containing one "create table", or more).</p>
-				<p>Now we need, at development time, to tag these scripts with some special comments that liquibase will recognize at run time.
-					A goal is provided by the lutece maven tools plugin to automatically generate those tags.</p>
-				<code>mvn fr.paris.lutece.tools:lutece-maven-plugin:4.1.3-SNAPSHOT:liquibase-sql</code>
-				<p>This command walks through all your SQL source files in src/sql and generates corresponding tagged files in src/liquibasesql. All SQL files
-					are tagged, with no pre-condition. The liquibase plugin at run-time will determine whether a particular file needs to be run</p>
-				<p>By default all SQL files are replaced in the folder src/sql. If you want to do a dry run (to folder target/liquibasesql), you may set the <b>dryRun</b> parameter to true on the command line.</p>
-				<p>You might then want to build your plugin with <code>mvn clean install</code> to make it available to the build of your web site.</p>
-			</subsection>
-			<subsection name="Integrate the plugin">
-				<p>If you do not have a lutece web site suitable for testing, please create one as usual.
-
-Then add these two dependencies (the liquibase plugin, and your own plugin) to the pom.xml of your web site :</p>
-<pre><![CDATA[ xml
-        <dependency>
-        	<groupId>fr.paris.lutece.plugins</groupId>
-            <artifactId>plugin-liquibase</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <type>lutece-plugin</type>
-        </dependency>
-        <dependency>
-        	<groupId>fr.paris.lutece.plugins</groupId>
-            <artifactId>plugin-testpourliquibase</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <type>lutece-plugin</type>
-        </dependency>
-]]></pre>
-<p>
-	The version number for **plugin-testpourliquibase** is the one you used when creating a test plugin above.</p>
-<p>
-The default behaviour of the liquibase plugin when starting a war is to do nothing. To enable it, you must define the following property in the properties file <b>liquibase-plugin.properties</b> (full relative path with <b>dev</b> profile : ./src/conf/dev/WEB-INF/conf/plugins/liquibase-plugin.properties) :
-<code>liquibase.enabled.at.startup=true</code>
-Then build your site
-<code>mvn clean fr.paris.lutece.tools:lutece-maven-plugin:4.1.3-SNAPSHOT:site-assembly -P dev</code>
-
-This command uses the <b>dev</b> profile and, importantly, specifies the version of the plugin, which places the SQL in the right folder so that liquibase can find them at run time in the classpath.
-</p>
-			</subsection>
-			<subsection name="Run">
-<p>Deploy your site as usual in tomcat.</p>
-
-<p>The liquibase plugin will output traces for its activity at startup between lines "LiquibaseRunner starting" and "LiquibaseRunner ended".</p>
-			</subsection>
-		</section>
+			
 	</body>
 </document>
-
