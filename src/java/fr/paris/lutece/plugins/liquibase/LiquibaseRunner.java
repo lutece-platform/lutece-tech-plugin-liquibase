@@ -32,8 +32,11 @@ public class LiquibaseRunner implements IEarlyInitializationService
     private static final String AT_STARTUP = "liquibase.enabled.at.startup";
     private static final String DRY_RUN_OUTPUT_FILE = "liquibase.dryrun.output.file";
     private static final String DRY_RUN = "liquibase.dryrun";
+    private static final String READY_TO_RUN = "liquibase.readyToRun";
     private static final String ANALYTICS_ENABLED = "liquibase.analytics.enabled";
-    private static final String SQL_LOG_LEVEL = "liquibase.sql.logLevel";   
+    private static final String SQL_LOG_LEVEL = "liquibase.sql.logLevel";
+    private static final String SAFE_RUN = "liquibase.safeRun";
+    private static final String LIQUIBASE_FILE_ERRORS="liquibase.fileErrors";  
 
     @Override
     public void process()
@@ -42,11 +45,35 @@ public class LiquibaseRunner implements IEarlyInitializationService
         // we do not run unless explicitly told to do so
         final boolean enabledAtStartup = AppPropertiesService.getPropertyBoolean(AT_STARTUP, false);
         final boolean enabledDryRun = AppPropertiesService.getPropertyBoolean(DRY_RUN, false);
+        final boolean safeRunEnabled = AppPropertiesService.getPropertyBoolean(SAFE_RUN, true);
+        //property generated during the build process in the file WEB-INF/classes/sql/microprofile-config.properties
+        final boolean readyToRun = AppPropertiesService.getPropertyBoolean(READY_TO_RUN, true);
+        final String liquibaseFileErrors=AppPropertiesService.getProperty(LIQUIBASE_FILE_ERRORS,"");
+
+
+         if( !liquibaseFileErrors.isEmpty() )
+         {
+             AppLogService.error("LiquibaseRunner detected errors in SQL files : " + liquibaseFileErrors + ". Stopping startup process");
+             throw new RuntimeException("LiquibaseRunner detected errors in SQL files : " + liquibaseFileErrors + ". Stopping startup process");
+         }
+
         if (!enabledAtStartup)
         {
             AppLogService.info("LiquibaseRunner not enabled at startup");
-        } else
+        }else if ( !readyToRun  && safeRunEnabled )
         {
+            AppLogService.error("LiquibaseRunner not ready to run stopping startup process");
+            AppLogService.error("LiquibaseRunner files not managed by liquibase are {}" ,liquibaseFileErrors );
+            throw new RuntimeException("LiquibaseRunner not ready to run stopping startup process");
+        }
+        else
+        {
+            if(!readyToRun)
+            {
+                AppLogService.info("LiquibaseRunner is not ready to run, but safe run is disabled, proceeding with liquibase execution");
+                AppLogService.info("LiquibaseRunner files not managed by liquibase are {}" ,liquibaseFileErrors );
+            }
+
             AppLogService.info("LiquibaseRunner starting");
             try
             {
