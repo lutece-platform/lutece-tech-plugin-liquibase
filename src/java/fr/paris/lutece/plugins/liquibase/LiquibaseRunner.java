@@ -9,8 +9,11 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 
+import javax.servlet.ServletException;
+
 import fr.paris.lutece.portal.service.database.AppConnectionService;
 import fr.paris.lutece.portal.service.init.IEarlyInitializationService;
+import fr.paris.lutece.portal.service.init.LuteceInitException;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
@@ -51,12 +54,6 @@ public class LiquibaseRunner implements IEarlyInitializationService
         final String liquibaseFileErrors=AppPropertiesService.getProperty(LIQUIBASE_FILE_ERRORS,"");
 
 
-         if( !liquibaseFileErrors.isEmpty() )
-         {
-             AppLogService.error("LiquibaseRunner detected errors in SQL files : " + liquibaseFileErrors + ". Stopping startup process");
-             throw new RuntimeException("LiquibaseRunner detected errors in SQL files : " + liquibaseFileErrors + ". Stopping startup process");
-         }
-
         if (!enabledAtStartup)
         {
             AppLogService.info("LiquibaseRunner not enabled at startup");
@@ -70,8 +67,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
         {
             if(!readyToRun)
             {
-                AppLogService.info("LiquibaseRunner is not ready to run, but safe run is disabled, proceeding with liquibase execution");
-                AppLogService.info("LiquibaseRunner files not managed by liquibase are {}" ,liquibaseFileErrors );
+                AppLogService.error("LiquibaseRunner is not ready to run, but safe run is disabled, proceeding with liquibase execution");
+                AppLogService.error("LiquibaseRunner files not managed by liquibase are {}" ,liquibaseFileErrors );
             }
 
             AppLogService.info("LiquibaseRunner starting");
@@ -146,5 +143,11 @@ public class LiquibaseRunner implements IEarlyInitializationService
             }
             AppLogService.info("LiquibaseRunner ended");
         }
+    }
+
+   @Override   
+   public boolean isCriticalService()
+    {
+        return true;
     }
 }

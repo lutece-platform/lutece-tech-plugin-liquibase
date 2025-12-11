@@ -39,6 +39,11 @@
 							<td>false</td>
 						</tr>
 						<tr>
+							<td><code>liquibase.safeRun</code></td>
+							<td>Force liquibase to run without checking if existing files are managed by liquibase (false to bypass safety check)</td>
+							<td>true</td>
+						</tr>
+						<tr>
 							<td><code>liquibase.first.run.request</code></td>
 							<td>SQL query to check if this is the first run (checks for DATABASECHANGELOG table)</td>
 							<td>select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';</td>
