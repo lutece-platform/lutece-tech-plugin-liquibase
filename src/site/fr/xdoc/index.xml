@@ -39,6 +39,11 @@
 							<td>false</td>
 						</tr>
 						<tr>
+							<td><code>liquibase.safeRun</code></td>
+							<td>Forcer l'exécution de liquibase sans vérifier si les fichiers existants sont gérés par liquibase (false pour contourner la vérification de sécurité)</td>
+							<td>true</td>
+						</tr>
+						<tr>
 							<td><code>liquibase.first.run.request</code></td>
 							<td>Requête SQL pour vérifier s'il s'agit de la première exécution (vérifie la table DATABASECHANGELOG)</td>
 							<td>select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';</td>

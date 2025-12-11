@@ -21,6 +21,7 @@ Par défaut, le plugin ne fait rien. Toutes les configurations sont définies da
 | Propriété| Description| Valeur par défaut|
 |-----------------|-----------------|-----------------|
 |  `liquibase.enabled.at.startup` | Activer l'exécution du plugin au démarrage de l'application| false|
+|  `liquibase.safeRun` | Forcer l'exécution de liquibase sans vérifier si les fichiers existants sont gérés par liquibase (false pour contourner la vérification de sécurité)| true|
 |  `liquibase.first.run.request` | Requête SQL pour vérifier s'il s'agit de la première exécution (vérifie la table DATABASECHANGELOG)| select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';|
 |  `liquibase.empty.db.request` | Requête SQL pour vérifier si la base de données est vide| SELECT count(*) FROM information_schema.tables where table_schema=database();|
 
