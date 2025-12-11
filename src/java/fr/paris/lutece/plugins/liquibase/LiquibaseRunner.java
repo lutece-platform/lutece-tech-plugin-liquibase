@@ -8,9 +8,6 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-
-import javax.servlet.ServletException;
-
 import fr.paris.lutece.portal.service.database.AppConnectionService;
 import fr.paris.lutece.portal.service.init.IEarlyInitializationService;
 import fr.paris.lutece.portal.service.init.LuteceInitException;
