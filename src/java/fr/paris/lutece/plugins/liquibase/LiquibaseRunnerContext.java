@@ -104,7 +104,6 @@ public class LiquibaseRunnerContext
       if(!bEnabledDryRun)
       {
           entries.stream().forEach(entry -> DatastoreService.setDataValue(entry.key, entry.value));
-          PluginService.getPluginList().stream().forEach(p -> AppLogService.info("LiquibaseRunnerContext plugin {} version {}", p.getName(), p.getVersion()));
      }  
      else 
      {
