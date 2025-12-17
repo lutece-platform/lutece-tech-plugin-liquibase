@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import fr.paris.lutece.plugins.liquibase.LiquibaseRunnerContext;
 import fr.paris.lutece.plugins.liquibase.PluginMeta;
 import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.utils.sql.PluginVersion;
 import fr.paris.lutece.utils.sql.SqlPathInfo;
 import liquibase.changelog.IncludeAllFilter;
@@ -40,14 +41,14 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                 include = info.isCreate();
                 if(include)
                 {
-                    LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE);
+                    setLastRunScriptType(info);
                  }
             }
             else
             {
                 try
                 {
-                    PluginVersion alreadyInstalledVersion = LiquibaseRunnerContext.pluginVersion(pluginName);
+                    PluginVersion alreadyInstalledVersion = LiquibaseRunnerContext.componentVersion(info);
                     if (LiquibaseRunnerContext.isLiquibaseNeverRan())
                     {
                         // DB exists, never ran liquibase => consider it's a migration
@@ -58,7 +59,7 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                         include = info.isCreate();
                         if(include)
                         {
-                           LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE);
+                              setLastRunScriptType(info);
                         }
 
                     } else if (!info.isCreate())
@@ -73,10 +74,9 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                         //finaly if we included an update script, we set the last run script type to update
                         if(include)
                         {
-                         LiquibaseRunnerContext.setPluginLastRunScriptType(pluginName, LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE); 
+                             setLastRunScriptType(info);
                         }
   
-
                     }
                     
                   
@@ -87,13 +87,44 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                 }
             }
             // in all cases, store the current version in the datastore
-            String pluginVersion= PluginMeta.getPluginVersion(pluginName);
-            if (pluginVersion == null)
-                AppLogService.error("LiquibaseRunner. No plugin metadata for " + pluginName);
+            if(!info.isTheme())
+            {
+                //cas plugin,module,core
+                String pluginVersion=PluginMeta.getPluginVersion(pluginName);
+                if (pluginVersion == null)
+                    AppLogService.error("LiquibaseRunner. No plugin metadata for " + pluginName);
+                else
+                    LiquibaseRunnerContext.setComponentVersion(pluginName, pluginVersion,false);
+            }
             else
-                LiquibaseRunnerContext.setPluginVersion(pluginName, pluginVersion);
+            {
+                String themeVersion=AppPropertiesService.getProperty("themes."+info.getTheme()+".version");
+                if (themeVersion == null)
+                    AppLogService.error("LiquibaseRunner. No theme metadata for " + info.getTheme());
+                else
+                    LiquibaseRunnerContext.setComponentVersion(info.getTheme(), themeVersion,true);
+            }
         }
         AppLogService.info("LiquibaseRunner : file {} {}included", changeLogPath, include ? "" : "NOT ");
         return include;
+    }
+
+
+
+    /**
+     * Sets the last run script type for the given SQL path info.
+     * @param info the SQL path info
+     */
+    private void setLastRunScriptType(SqlPathInfo info)
+    {
+        if(info.isTheme())
+        {
+            LiquibaseRunnerContext.setThemeLastRunScriptType(info.getTheme(), info.isCreate() ? LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE : LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE);
+        }
+        else
+        {
+            LiquibaseRunnerContext.setPluginLastRunScriptType(info.getFullPluginName(), info.isCreate() ? LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_CREATE : LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE);
+        }
+        
     }
 }
