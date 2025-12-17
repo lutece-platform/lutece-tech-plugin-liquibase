@@ -13,6 +13,7 @@ import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.utils.sql.PluginVersion;
+import fr.paris.lutece.utils.sql.SqlPathInfo;
 
 /**
  * Static context holder for shared data during a liquibase run.
@@ -114,24 +115,26 @@ public class LiquibaseRunnerContext
 
     /**
      * 
-     * Looks the the plugin version in the DB.
+     * Looks the component version in the DB.
      * 
      * "core" is a special case and always has a version :
      * 
      * Integer.MAX_VALUE if no true version can be found, which is newer than all other versions and ensures that no attempt to run any core scripts is
      * attempted when running liquibase for the first time on a existing DB.
      * 
-     * @param pluginName a name such as 'forms'
+    
      * @return the version as a string (for example "1.0.1"), or null if not found
      * @throws SQLException
      */
-    public static PluginVersion pluginVersion(String pluginName) throws SQLException
+    public static PluginVersion componentVersion(SqlPathInfo info) throws SQLException
     {
-        String version = DatastoreService.getDataValue(pluginVersionKey(pluginName), null);
-        if (version == null && CORE_PLUGIN_NAME.equals(pluginName))
+        String version = DatastoreService.getDataValue(info.isTheme()?themeVersionKey(info.getTheme()):pluginVersionKey(info.getFullPluginName()), null);
+        if (!info.isTheme()  && version == null && CORE_PLUGIN_NAME.equals(info.getPlugin()))
             version = "" + Integer.MAX_VALUE;
         return PluginVersion.of(version);
     }
+
+
 
     /**
      * 
@@ -153,9 +156,19 @@ public class LiquibaseRunnerContext
         return "core.plugins.status." + pluginName + ".version";
     }
 
+    private static String themeVersionKey(String themeName)
+    {
+        return "core.theme.status." + themeName + ".version";
+    }
+
+
     private static String pluginLastRunScriptTypeKey(String pluginName)
     {
         return "core.plugins.status." + pluginName + ".lastRunScriptType";
+    }
+       private static String themeLastRunScriptTypeKey(String themeName)
+    {
+        return "core.themes.status." + themeName + ".lastRunScriptType";
     }
     
 
@@ -201,9 +214,9 @@ public class LiquibaseRunnerContext
      * @param pluginName
      * @param version
      */
-    public static void setPluginVersion(String pluginName, String version)
+    public static void setComponentVersion(String componentName, String version, boolean isTheme)
     {
-        entries.add(new DatastoreEntry(pluginVersionKey(pluginName), version));
+        entries.add(new DatastoreEntry(isTheme?themeVersionKey(componentName): pluginVersionKey(componentName), version));
     }
 
 
@@ -217,6 +230,20 @@ public class LiquibaseRunnerContext
     {
         entries.add(new DatastoreEntry(pluginLastRunScriptTypeKey(pluginName), strLastRunTypeScript));
     }
+
+    /**
+     * Sets the type of the last run script (create/init or update) in the datastore (later, when all SQL files have been executed)
+     * 
+     * @param pluginName
+     * @param version
+     */
+    public static void setThemeLastRunScriptType(String themeName, String strLastRunTypeScript)
+    {
+        entries.add(new DatastoreEntry(themeLastRunScriptTypeKey(themeName), strLastRunTypeScript));
+    }
+
+
+
 
     /**
      * Helper function to run queries and extract results.
