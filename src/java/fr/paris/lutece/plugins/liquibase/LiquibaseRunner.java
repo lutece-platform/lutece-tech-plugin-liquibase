@@ -117,6 +117,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
                         else
                         {
                             AppLogService.info("LiquibaseRunner applying database changes");
+                            AppLogService.info("LiquibaseRunner enable migration mode   : " + LiquibaseRunnerContext.isEnableMigrationMode() );
                             liquibase.update(new Contexts());
                         }
                         // closing the context bumps plugin versions in the datastore
