@@ -47,7 +47,7 @@ public class LiquibaseRunnerContext
     private static final String LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS = "liquibase.accept.unstable.versions";
 
 
-    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion, bEnabledDryRun;
+    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion, bEnabledDryRun,bEnableMigrationMode;
     public static boolean isEmptyDb()
     {
         return emptyDb;
@@ -64,6 +64,12 @@ public class LiquibaseRunnerContext
     public static boolean isAcceptUnstableVersion()
     {
         return bAcceptUnstableVersion;
+    }
+
+    /** Migration mode is enabled when the property "liquibase.migration.mode" is set to true */
+    public static boolean isEnableMigrationMode()
+    {
+        return bEnableMigrationMode;
     }
 
     private static Connection connection;
@@ -87,6 +93,7 @@ public class LiquibaseRunnerContext
         bAcceptSnapshotVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS, false);
         bAcceptUnstableVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS, false);
         bEnabledDryRun=  AppPropertiesService.getPropertyBoolean("liquibase.dryrun", false);
+        bEnableMigrationMode=  AppPropertiesService.getPropertyBoolean("liquibase.migration.mode", false);
         LiquibaseRunnerContext.connection = connection;
         final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
         liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
@@ -102,10 +109,20 @@ public class LiquibaseRunnerContext
      */
     static void close()
     {
-      if(!bEnabledDryRun)
+     
+      if(isEnableMigrationMode())
+     {
+
+        AppLogService.info("LiquibaseRunnerContext migration mode enabled update plugin version  in core datastore without running liquibase scripts");
+         PluginMeta.getPluginsMeta().entrySet().stream().forEach(entry -> LiquibaseRunnerContext.setComponentVersion(entry.getKey(), entry.getValue(), false));
+
+     }
+     
+     if(!bEnabledDryRun )
       {
+          AppLogService.info(" updating datastore with plugins version and theme versions");
           entries.stream().forEach(entry -> DatastoreService.setDataValue(entry.key, entry.value));
-     }  
+     }
      else 
      {
          AppLogService.info("LiquibaseRunnerContext dry run enabled, not updating datastore with plugin versions");

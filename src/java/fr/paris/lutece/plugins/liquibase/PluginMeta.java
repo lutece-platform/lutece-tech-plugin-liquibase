@@ -66,4 +66,9 @@ public class PluginMeta
     {
         return _mapPluginsMeta.get(pluginName);
     }
+
+    public static Map<String, String> getPluginsMeta()
+    {
+        return _mapPluginsMeta;
+    }
 }
