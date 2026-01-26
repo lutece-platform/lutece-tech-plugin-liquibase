@@ -112,6 +112,20 @@
 						</tr>
 					</table>
 				</subsection>
+				<subsection name="Mode de migration">
+					<table>
+						<tr>
+							<th>Propriété</th>
+							<th>Description</th>
+							<th>Valeur par défaut</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.migration.mode</code></td>
+							<td>Activer le mode de migration pour mettre à jour les versions du plugin dans le datastore sans appliquer les changesets de liquibase</td>
+							<td>false</td>
+						</tr>
+					</table>
+				</subsection>
 			</section>
 	</body>
 </document>

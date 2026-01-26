@@ -46,6 +46,12 @@ Par défaut, le plugin ne fait rien. Toutes les configurations sont définies da
 |  `liquibase.analytics.enabled` | Activer l'envoi d'analytiques à Liquibase| false|
 |  `liquibase.sql.logLevel` | Définir le niveau de journalisation pour la sortie SQL (OFF, SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST, ALL, DEBUG)| DEBUG|
 
+## Mode de migration
+
+| Propriété| Description| Valeur par défaut|
+|-----------------|-----------------|-----------------|
+|  `liquibase.migration.mode` | Activer le mode de migration pour mettre à jour les versions du plugin dans le datastore sans appliquer les changesets de liquibase| false|
+
 
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
