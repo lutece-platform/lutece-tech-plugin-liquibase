@@ -22,14 +22,18 @@ import liquibase.resource.ResourceAccessor;
 
 /**
  * Filters SQL files before giving them to liquibase.
- * 
+ *
  * This class is NOT thread-safe. This is not a problem as long as it is only used at lucene core startup on the main thread.
- * 
+ *
  */
 public class RegexpFilteringResourceAccessor implements ResourceAccessor
 {
+    private static final String CHANGESET_MARKER = "changeset ";
+    private static final String FAIL_ON_ERROR_ATTR = "failOnError:";
+
     private final ResourceAccessor delegate;
     private final SqlRegexpHelper helper;
+    private final boolean forceFailOnErrorFalse;
     // for better performance, re-used for all SQL files
     // this is what makes this class unsafe for use by several threads.
     private final ByteArrayOutputStream byteCache = new ByteArrayOutputStream();
@@ -38,10 +42,11 @@ public class RegexpFilteringResourceAccessor implements ResourceAccessor
     // so we note the file name and re-use the byteCache if names match
     private String previousPath = null;
 
-    public RegexpFilteringResourceAccessor(ResourceAccessor delegate, SqlRegexpHelper helper) throws IOException
+    public RegexpFilteringResourceAccessor(ResourceAccessor delegate, SqlRegexpHelper helper, boolean forceFailOnErrorFalse) throws IOException
     {
         this.delegate = delegate;
         this.helper = helper;
+        this.forceFailOnErrorFalse = forceFailOnErrorFalse;
     }
 
     @Override
@@ -64,7 +69,7 @@ public class RegexpFilteringResourceAccessor implements ResourceAccessor
 
     private List<Resource> filterResources(List<Resource> source)
     {
-        return (source == null || helper == null) ? source : source.stream().map(FilteringResource::new).collect(Collectors.toList());
+        return (source == null || (helper == null && !forceFailOnErrorFalse)) ? source : source.stream().map(FilteringResource::new).collect(Collectors.toList());
     }
 
     @Override
@@ -90,11 +95,32 @@ public class RegexpFilteringResourceAccessor implements ResourceAccessor
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(byteCache, StandardCharsets.UTF_8));)
             {
                 for (String line : (Iterable<String>) lines::iterator)
-                    writer.append(helper.filter(line)).append('\n');
+                {
+                    String filtered = helper != null ? helper.filter(line) : line;
+                    if (forceFailOnErrorFalse)
+                    {
+                        filtered = injectFailOnErrorFalse(filtered);
+                    }
+                    writer.append(filtered).append('\n');
+                }
             }
             previousPath = path;
         }
         return new ByteArrayInputStream(byteCache.toByteArray());
+    }
+
+    /**
+     * Injects failOnError:false into changeset declaration lines.
+     * Handles both "-- changeset" and "--changeset" formats.
+     */
+    private String injectFailOnErrorFalse(String line)
+    {
+        String trimmed = line.trim();
+        if (trimmed.startsWith("--") && trimmed.contains(CHANGESET_MARKER) && !trimmed.contains(FAIL_ON_ERROR_ATTR))
+        {
+            return line + " failOnError:false";
+        }
+        return line;
     }
 
     /**

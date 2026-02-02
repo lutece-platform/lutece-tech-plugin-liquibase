@@ -36,7 +36,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
     private static final String ANALYTICS_ENABLED = "liquibase.analytics.enabled";
     private static final String SQL_LOG_LEVEL = "liquibase.sql.logLevel";
     private static final String SAFE_RUN = "liquibase.safeRun";
-    private static final String LIQUIBASE_FILE_ERRORS="liquibase.fileErrors";  
+    private static final String LIQUIBASE_FILE_ERRORS="liquibase.fileErrors";
+    private static final String FAIL_ON_ERROR = "liquibase.failOnError";
 
     @Override
     public void process()
@@ -95,7 +96,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
                      System.setProperty("liquibase.analytics.enabled", AppPropertiesService.getProperty(ANALYTICS_ENABLED, "false"));
                      System.setProperty("liquibase.sql.logLevel", AppPropertiesService.getProperty(SQL_LOG_LEVEL, "DEBUG"));
 
-                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper),
+                    boolean forceFailOnErrorFalse = !AppPropertiesService.getPropertyBoolean(FAIL_ON_ERROR, true);
+                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper, forceFailOnErrorFalse),
                             database);)
                     {
                         LiquibaseRunnerContext.init(connection);
