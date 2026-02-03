@@ -52,6 +52,12 @@ Par défaut, le plugin ne fait rien. Toutes les configurations sont définies da
 |-----------------|-----------------|-----------------|
 |  `liquibase.migration.mode` | Activer le mode de migration pour mettre à jour les versions du plugin dans le datastore sans appliquer les changesets de liquibase| false|
 
+## Gestion des erreurs
+
+| Propriété| Description| Valeur par défaut|
+|-----------------|-----------------|-----------------|
+|  `liquibase.failOnError` | Arrêter sur une erreur SQL dans un changeset (true) ou continuer avec les changesets suivants (false)| true|
+
 
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
