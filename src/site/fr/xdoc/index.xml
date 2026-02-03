@@ -126,6 +126,20 @@
 						</tr>
 					</table>
 				</subsection>
+				<subsection name="Gestion des erreurs">
+					<table>
+						<tr>
+							<th>Propriété</th>
+							<th>Description</th>
+							<th>Valeur par défaut</th>
+						</tr>
+						<tr>
+							<td><code>liquibase.failOnError</code></td>
+							<td>Arrêter sur une erreur SQL dans un changeset (true) ou continuer avec les changesets suivants (false)</td>
+							<td>true</td>
+						</tr>
+					</table>
+				</subsection>
 			</section>
 	</body>
 </document>
