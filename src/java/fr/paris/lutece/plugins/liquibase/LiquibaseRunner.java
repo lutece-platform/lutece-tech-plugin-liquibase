@@ -140,6 +140,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
             } catch (Throwable e)
             {
                 AppLogService.error("LiquibaseRunner failed", e);
+                throw new RuntimeException("LiquibaseRunner failed stopping startup process");
             }
             AppLogService.info("LiquibaseRunner ended");
         }
