@@ -68,7 +68,7 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                         // DB exists, liquibase already ran, a version exists => run the (chosen) updates
                         include = info.getDstVersion().compareTo(alreadyInstalledVersion) > 0;
 
-                        if(!include &&  (alreadyInstalledVersion.isSnapshot()&& LiquibaseRunnerContext.isAcceptSnapshotVersion() )||(alreadyInstalledVersion.isUnstable()&& LiquibaseRunnerContext.isAcceptUnstableVersion())  && LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE.equals(LiquibaseRunnerContext.pluginLastRunScriptType(pluginName)))
+                        if(!include &&  LiquibaseRunnerContext.LAST_RUN_SCRIPT_TYPE_UPDATE.equals(LiquibaseRunnerContext.pluginLastRunScriptType(pluginName)) && ((alreadyInstalledVersion.isSnapshot()&& LiquibaseRunnerContext.isAcceptSnapshotVersion() )||(alreadyInstalledVersion.isUnstable()&& LiquibaseRunnerContext.isAcceptUnstableVersion())))
                         {    // if we accept snapshot and unstable versions (rc,beta,..) include also if the dst version is an unstable or  snapshot and equals to the installed version
                             include = info.getDstVersion().compareTo(alreadyInstalledVersion) == 0;
                         }
