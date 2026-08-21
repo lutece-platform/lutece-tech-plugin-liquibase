@@ -45,9 +45,10 @@ public class LiquibaseRunnerContext
     
     private static final String LIQUIBASE_ACCEPT_SNAPSHOT_VERSIONS = "liquibase.accept.snapshot.versions";
     private static final String LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS = "liquibase.accept.unstable.versions";
+    private static final String LIQUIBASE_SAFE_RUN = "liquibase.safeRun";
 
 
-    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion, bEnabledDryRun,bEnableMigrationMode;
+    private static boolean liquibaseNeverRan, emptyDb, bAcceptSnapshotVersion, bAcceptUnstableVersion, bEnabledDryRun,bEnableMigrationMode,bSafeRun;
     public static boolean isEmptyDb()
     {
         return emptyDb;
@@ -94,6 +95,7 @@ public class LiquibaseRunnerContext
         bAcceptUnstableVersion=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_ACCEPT_UNSTABLE_VERSIONS, false);
         bEnabledDryRun=  AppPropertiesService.getPropertyBoolean("liquibase.dryrun", false);
         bEnableMigrationMode=  AppPropertiesService.getPropertyBoolean("liquibase.migration.mode", false);
+        bSafeRun=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_SAFE_RUN, true);
         LiquibaseRunnerContext.connection = connection;
         final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
         liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
@@ -154,7 +156,30 @@ public class LiquibaseRunnerContext
 
 
     /**
-     * 
+     * Reports a SQL file whose path resolves to a component declared by no plugin descriptor
+     * (nor themes.&lt;name&gt;.version property).
+     *
+     * This is a packaging fault (LUT-33232) : the file's directory and the shipping artifact's descriptor disagree.
+     * When liquibase.safeRun is true (the default), startup is aborted before any changeset is executed
+     * (this method is called while liquibase parses the changelog, before execution).
+     * Otherwise the fault is only logged, and the caller excludes the file.
+     *
+     * @param path          the SQL file path
+     * @param componentName the unresolved component name derived from the path
+     */
+    public static void reportUnresolvedComponent(String path, String componentName)
+    {
+        AppLogService.error("LiquibaseRunner. SQL file {} resolves to component '{}' which is not declared by any plugin descriptor : file NOT included", path,
+                componentName);
+        if (bSafeRun)
+        {
+            throw new IllegalStateException("LiquibaseRunner : SQL file " + path + " resolves to undeclared component '" + componentName
+                    + "'. This is a packaging fault (see LUT-33232) : startup aborted because liquibase.safeRun=true. Set liquibase.safeRun=false to only exclude such files.");
+        }
+    }
+
+    /**
+     *
      * Looks the type of the last run script (create/init or update) in the DB.
      * 
      * 

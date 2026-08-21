@@ -141,5 +141,35 @@
 					</table>
 				</subsection>
 			</section>
+			<section name="Ordre d'exécution : la directive d'en-tête runAfter">
+				<p>
+					Par défaut, liquibase exécute les fichiers SQL dans l'ordre alphabétique des chemins. Quand un
+					plugin a besoin que ses scripts s'exécutent après ceux d'un autre plugin (typiquement pour insérer
+					des lignes dans des tables créées par cet autre plugin), le contournement historique consistait à
+					livrer le fichier SQL directement dans le répertoire de l'autre plugin. Cette pratique casse la
+					résolution de version : l'inclusion du fichier est alors décidée par rapport à la version de
+					l'autre plugin, jamais celle du propriétaire.
+				</p>
+				<p>
+					La directive d'en-tête <code>runAfter</code> remplace cette pratique. Elle se déclare dans le bloc
+					de commentaires de tête (avant le premier changeset) de n'importe quel script du plugin :
+				</p>
+				<pre>
+--liquibase formatted sql
+--lutece runAfter:genericattributes
+--changeset forms:init_db_generic_attributes_forms.sql
+INSERT INTO genatt_entry_type (id_type, title, ...) VALUES (1, 'Bouton radio', ...);
+				</pre>
+				<p>
+					Tous les scripts du plugin déclarant (ici <code>forms</code>) sont alors ordonnés après tous les
+					scripts du plugin cible (ici <code>genericattributes</code>), tout en restant physiquement dans le
+					répertoire de leur propriétaire — la résolution de version reste donc correcte.
+				</p>
+				<ul>
+					<li>La directive a une portée plugin : une seule déclaration dans un seul fichier suffit pour tout le plugin.</li>
+					<li>Les directives se chaînent à n'importe quelle profondeur : si A déclare runAfter:B et B déclare runAfter:C, l'ordre résultant est C, puis B, puis A.</li>
+					<li>Les directives invalides (cibles en conflit dans un même plugin, cible inconnue ou sans script, auto-référence, implication de core, cycles de dépendances) sont ignorées avec un log ERROR et le plugin garde sa position naturelle.</li>
+				</ul>
+			</section>
 	</body>
 </document>
