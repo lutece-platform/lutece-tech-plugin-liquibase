@@ -67,6 +67,12 @@
 			<artifactId>liquibase-slf4j</artifactId>
 			<version>5.1.0</version>
 		</dependency>
+		<!-- version managed by lutece-global-pom -->
+		<dependency>
+			<groupId>fr.paris.lutece.plugins</groupId>
+			<artifactId>library-lutece-unit-testing</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<properties>
