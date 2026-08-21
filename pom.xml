@@ -66,6 +66,13 @@
 			<artifactId>xml-apis</artifactId>
 			<version>1.4.01</version>
 		</dependency>
+		<!-- core7: explicit JUnit 5 (library-lutece-unit-testing is v8-only, version not managed by parent 7.0.2) -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<properties>
