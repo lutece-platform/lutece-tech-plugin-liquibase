@@ -59,6 +59,26 @@ Par défaut, le plugin ne fait rien. Toutes les configurations sont définies da
 |  `liquibase.failOnError` | Arrêter sur une erreur SQL dans un changeset (true) ou continuer avec les changesets suivants (false)| true|
 
 
+# Ordre d'exécution : la directive d'en-tête runAfter
+
+Par défaut, liquibase exécute les fichiers SQL dans l'ordre alphabétique des chemins. Quand un plugin a besoin que ses scripts s'exécutent après ceux d'un autre plugin (typiquement pour insérer des lignes dans des tables créées par cet autre plugin), le contournement historique consistait à livrer le fichier SQL directement dans le répertoire de l'autre plugin. Cette pratique casse la résolution de version : l'inclusion du fichier est alors décidée par rapport à la version de l'autre plugin, jamais celle du propriétaire.
+
+La directive d'en-tête `runAfter` remplace cette pratique. Elle se déclare dans le bloc de commentaires de tête (avant le premier changeset) de n'importe quel script du plugin :
+
+```sql
+--liquibase formatted sql
+--lutece runAfter:genericattributes
+--changeset forms:init_db_generic_attributes_forms.sql
+INSERT INTO genatt_entry_type (id_type, title, ...) VALUES (1, 'Bouton radio', ...);
+```
+
+Tous les scripts du plugin déclarant (ici `forms`) sont alors ordonnés après tous les scripts du plugin cible (ici `genericattributes`), tout en restant physiquement dans le répertoire de leur propriétaire — la résolution de version reste donc correcte.
+
+* La directive a une portée plugin : une seule déclaration dans un seul fichier suffit pour tout le plugin.
+* Les directives se chaînent à n'importe quelle profondeur : si A déclare runAfter:B et B déclare runAfter:C, l'ordre résultant est C, puis B, puis A.
+* Les directives invalides (cibles en conflit dans un même plugin, cible inconnue ou sans script, auto-référence, implication de core, cycles de dépendances) sont ignorées avec un log ERROR et le plugin garde sa position naturelle.
+
+
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
 

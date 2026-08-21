@@ -59,6 +59,26 @@ By default the plugin does nothing. All configurations are defined in the `liqui
 |  `liquibase.failOnError` | Stop on SQL error in a changeset (true) or continue with the next changesets (false)| true|
 
 
+# Script ordering: the runAfter header directive
+
+By default, liquibase executes the SQL files in alphabetical path order. When a plugin needs its scripts to run after those of another plugin (typically to insert rows into tables created by that other plugin), the historical workaround was to ship the SQL file directly in the other plugin's directory. This practice breaks version resolution: the inclusion of the file is then decided against the other plugin's version, never the owner's.
+
+The `runAfter` header directive replaces this practice. Declare it in the leading comment block (before the first changeset) of any script of the plugin:
+
+```sql
+--liquibase formatted sql
+--lutece runAfter:genericattributes
+--changeset forms:init_db_generic_attributes_forms.sql
+INSERT INTO genatt_entry_type (id_type, title, ...) VALUES (1, 'Radio button', ...);
+```
+
+All the scripts of the declaring plugin (here `forms`) are then ordered after all the scripts of the target plugin (here `genericattributes`), while the files physically stay in their owner's directory — so version resolution remains correct.
+
+* The directive is plugin-scoped: one declaration in a single file is enough for the whole plugin.
+* Directives chain to any depth: if A declares runAfter:B and B declares runAfter:C, the resulting order is C, then B, then A.
+* Invalid directives (conflicting targets inside one plugin, unknown or script-less target, self reference, involvement of core, dependency cycles) are ignored with an ERROR log and the plugin keeps its natural position.
+
+
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
 

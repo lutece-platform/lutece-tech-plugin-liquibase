@@ -36,8 +36,20 @@ public class TestIncludeAllFilter implements IncludeAllFilter
         {
             AppLogService.debug("LiquibaseRunner testing file with info " + info);
             final String pluginName = info.getFullPluginName();
+            final String componentName = info.isTheme() ? info.getTheme() : pluginName;
+            // LUT-33232 : resolve the declared version BEFORE deciding anything.
+            // A path resolving to a component that no descriptor (or themes.<name>.version property) declares
+            // is a packaging fault, NOT a new plugin : a genuinely new plugin always ships its descriptor.
+            // Treating it as new used to run create_db_* scripts (and their DROP TABLE) on populated databases.
+            final String declaredVersion = info.isTheme() ? AppPropertiesService.getProperty("themes." + info.getTheme() + ".version")
+                    : PluginMeta.getPluginVersion(pluginName);
+            if (declaredVersion == null)
+            {
+                LiquibaseRunnerContext.reportUnresolvedComponent(changeLogPath, componentName);
+                include = false;
+            }
             // empty DB : only "create/init" files
-            if (LiquibaseRunnerContext.isEmptyDb())
+            else if (LiquibaseRunnerContext.isEmptyDb())
             {
                 include = info.isCreate();
                 if(include)
@@ -87,23 +99,10 @@ public class TestIncludeAllFilter implements IncludeAllFilter
                     AppLogService.error("version retrieve failed for plugin " + pluginName, e);
                 }
             }
-            // in all cases, store the current version in the datastore
-            if(!info.isTheme())
+            // in all cases (except unresolved components, excluded above), store the current version in the datastore
+            if (declaredVersion != null)
             {
-                //cas plugin,module,core
-                String pluginVersion=PluginMeta.getPluginVersion(pluginName);
-                if (pluginVersion == null)
-                    AppLogService.error("LiquibaseRunner. No plugin metadata for " + pluginName);
-                else
-                    LiquibaseRunnerContext.setComponentVersion(pluginName, pluginVersion,false);
-            }
-            else
-            {
-                String themeVersion=AppPropertiesService.getProperty("themes."+info.getTheme()+".version");
-                if (themeVersion == null)
-                    AppLogService.error("LiquibaseRunner. No theme metadata for " + info.getTheme());
-                else
-                    LiquibaseRunnerContext.setComponentVersion(info.getTheme(), themeVersion,true);
+                LiquibaseRunnerContext.setComponentVersion(componentName, declaredVersion, info.isTheme());
             }
         }
         AppLogService.info("LiquibaseRunner : file {} {}included", changeLogPath, include ? "" : "NOT ");
