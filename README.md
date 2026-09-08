@@ -79,6 +79,41 @@ All the scripts of the declaring plugin (here `forms`) are then ordered after al
 * Invalid directives (conflicting targets inside one plugin, unknown or script-less target, self reference, involvement of core, dependency cycles) are ignored with an ERROR log and the plugin keeps its natural position.
 
 
+# Pre-execution scripts: the reserved prerun_db file
+
+Some one-shot fix-ups must be visible to the version resolution of the main liquibase run, or they are useless. Typical case, a plugin renamed between two releases: its SQL directory changes, so on an existing site the new component has no version in the datastore — it is treated as a fresh install, its update scripts are discarded, and the recorded version then jumps to the current release, so the discarded updates are never applied again. A migration script cannot help as long as it runs inside the main update: the inclusion decisions are already made when it executes.
+
+A plugin may ship **one reserved liquibase formatted SQL file per component**, at a fixed path derived from the component name:
+
+```
+sql/plugins/<plugin>/plugin/prerun_db_<plugin>.sql
+sql/plugins/<plugin>/modules/<module>/plugin/prerun_db_<plugin>-<module>.sql
+```
+
+All `prerun_db_*` files are executed in a preliminary liquibase update, before the main changelog is built and filtered, and are excluded from the main run. Since a formatted SQL file may hold several changesets, this file is the component's pre-execution mini-changelog: each release needing a fix-up appends a changeset to the same file. Changesets are recorded in `DATABASECHANGELOG`, run once, and support preconditions and `validCheckSum`.
+
+Example — after the rename of a plugin from `oldname` to `newname`, `sql/plugins/newname/plugin/prerun_db_newname.sql`:
+
+```sql
+-- liquibase formatted sql
+-- changeset newname:prerun-rename-oldname
+-- preconditions onFail:MARK_RAN onError:MARK_RAN
+-- precondition-sql-check expectedResult:1 SELECT COUNT(DISTINCT 1) FROM DATABASECHANGELOG WHERE FILENAME LIKE 'sql/plugins/oldname/%'
+UPDATE core_datastore SET entity_key = REPLACE(entity_key,'core.plugins.status.oldname.','core.plugins.status.newname.') WHERE entity_key LIKE '%core.plugins.status.oldname.%';
+UPDATE DATABASECHANGELOG SET FILENAME = REPLACE(FILENAME,'sql/plugins/oldname/','sql/plugins/newname/') WHERE FILENAME LIKE 'sql/plugins/oldname/%';
+```
+
+The installed version then survives the rename: the main run sees it and includes the proper upgrade scripts, and the already-executed changesets keep their identity under the new paths.
+
+Authoring rules:
+
+* Guard every changeset with preconditions failing to `MARK_RAN` both `onFail` and `onError`: the file runs on every database state, including an empty one at first install, where the precondition query itself may fail.
+* Never modify the body of an executed changeset without declaring `validCheckSum:`.
+* A fix-up already executed under another path on existing sites must, when moved into the reserved file, declare its original identity with `logicalFilePath:` on its changeset line.
+* Execution order between `prerun_db_*` files is alphabetical by path; `runAfter` does not apply to the preliminary run, which is also skipped in migration mode.
+* A `prerun_db_*` file at an unexpected location, misnamed, or owned by an undeclared component is a packaging fault, reported like an unresolved component (startup aborted when `liquibase.safeRun=true`).
+
+
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
 

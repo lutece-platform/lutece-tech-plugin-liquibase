@@ -79,6 +79,41 @@ Tous les scripts du plugin déclarant (ici `forms`) sont alors ordonnés après 
 * Les directives invalides (cibles en conflit dans un même plugin, cible inconnue ou sans script, auto-référence, implication de core, cycles de dépendances) sont ignorées avec un log ERROR et le plugin garde sa position naturelle.
 
 
+# Scripts pré-exécutés : le fichier réservé prerun_db
+
+Certaines remises en état ponctuelles doivent être visibles de la résolution de versions du run liquibase principal, sans quoi elles ne servent à rien. Cas typique, un plugin renommé entre deux releases : son répertoire SQL change, donc sur un site existant le nouveau composant n'a pas de version au datastore — il est traité comme une installation neuve, ses scripts d'upgrade sont écartés, puis la version enregistrée saute à la release courante : les upgrades écartés ne seront plus jamais joués. Un script de migration n'y peut rien tant qu'il s'exécute dans l'update principal : les décisions d'inclusion sont déjà prises quand il tourne.
+
+Un plugin peut livrer **un fichier SQL liquibase réservé par composant**, à un chemin fixe dérivé du nom du composant :
+
+```
+sql/plugins/<plugin>/plugin/prerun_db_<plugin>.sql
+sql/plugins/<plugin>/modules/<module>/plugin/prerun_db_<plugin>-<module>.sql
+```
+
+Tous les fichiers `prerun_db_*` sont exécutés dans un update liquibase préliminaire, avant la construction et le filtrage du changelog principal, et sont exclus de ce dernier. Un fichier « liquibase formatted sql » pouvant contenir plusieurs changesets, ce fichier est le mini-changelog de pré-exécution du composant : chaque release qui a besoin d'une remise en état ajoute un changeset au même fichier. Les changesets sont enregistrés dans `DATABASECHANGELOG`, exécutés une seule fois, avec preconditions et `validCheckSum`.
+
+Exemple — après le renommage d'un plugin `oldname` en `newname`, `sql/plugins/newname/plugin/prerun_db_newname.sql` :
+
+```sql
+-- liquibase formatted sql
+-- changeset newname:prerun-rename-oldname
+-- preconditions onFail:MARK_RAN onError:MARK_RAN
+-- precondition-sql-check expectedResult:1 SELECT COUNT(DISTINCT 1) FROM DATABASECHANGELOG WHERE FILENAME LIKE 'sql/plugins/oldname/%'
+UPDATE core_datastore SET entity_key = REPLACE(entity_key,'core.plugins.status.oldname.','core.plugins.status.newname.') WHERE entity_key LIKE '%core.plugins.status.oldname.%';
+UPDATE DATABASECHANGELOG SET FILENAME = REPLACE(FILENAME,'sql/plugins/oldname/','sql/plugins/newname/') WHERE FILENAME LIKE 'sql/plugins/oldname/%';
+```
+
+La version installée survit alors au renommage : le run principal la voit et inclut les bons scripts d'upgrade, et les changesets déjà exécutés gardent leur identité sous les nouveaux chemins.
+
+Règles d'écriture :
+
+* Protéger chaque changeset par des preconditions retombant en `MARK_RAN` à la fois `onFail` et `onError` : le fichier s'exécute sur tout état de base, y compris une base vide à la première installation, où la requête de precondition elle-même peut échouer.
+* Ne jamais modifier le corps d'un changeset exécuté sans déclarer `validCheckSum:`.
+* Une remise en état déjà exécutée sous un autre chemin sur des sites existants doit, en rejoignant le fichier réservé, déclarer son identité d'origine avec `logicalFilePath:` sur sa ligne changeset.
+* L'ordre d'exécution entre fichiers `prerun_db_*` est alphabétique ; `runAfter` ne s'applique pas au run préliminaire, qui est aussi sauté en mode migration.
+* Un fichier `prerun_db_*` à un emplacement inattendu, mal nommé, ou d'un composant non déclaré est un défaut de packaging, signalé comme un composant non résolu (démarrage refusé avec `liquibase.safeRun=true`).
+
+
 [Maven documentation and reports](https://dev.lutece.paris.fr/plugins/plugin-liquibase/)
 
 

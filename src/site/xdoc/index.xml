@@ -171,5 +171,38 @@ INSERT INTO genatt_entry_type (id_type, title, ...) VALUES (1, 'Radio button', .
 					<li>Invalid directives (conflicting targets inside one plugin, unknown or script-less target, self reference, involvement of core, dependency cycles) are ignored with an ERROR log and the plugin keeps its natural position.</li>
 				</ul>
 			</section>
+
+			<section name="Pre-execution scripts : the reserved prerun_db file">
+				<p>
+					Some one-shot fix-ups must be visible to the version resolution of the main liquibase run, or they
+					are useless. Typical case, a plugin renamed between two releases : its SQL directory changes, so on
+					an existing site the new component has no version in the datastore — it is treated as a fresh
+					install, its update scripts are discarded, and the recorded version then jumps to the current
+					release, so the discarded updates are never applied again. A migration script cannot help as long
+					as it runs inside the main update : the inclusion decisions are already made when it executes.
+				</p>
+				<p>
+					A plugin may ship one reserved liquibase formatted SQL file per component, at a fixed path derived
+					from the component name :
+				</p>
+				<pre>
+sql/plugins/&lt;plugin&gt;/plugin/prerun_db_&lt;plugin&gt;.sql
+sql/plugins/&lt;plugin&gt;/modules/&lt;module&gt;/plugin/prerun_db_&lt;plugin&gt;-&lt;module&gt;.sql
+				</pre>
+				<p>
+					All <code>prerun_db_*</code> files are executed in a preliminary liquibase update, before the main
+					changelog is built and filtered, and are excluded from the main run. Since a formatted SQL file may
+					hold several changesets, this file is the component's pre-execution mini-changelog : each release
+					needing a fix-up appends a changeset to the same file. Changesets are recorded in
+					<code>DATABASECHANGELOG</code>, run once, and support preconditions and <code>validCheckSum</code>.
+				</p>
+				<ul>
+					<li>Guard every changeset with preconditions failing to MARK_RAN both onFail and onError : the file runs on every database state, including an empty one at first install.</li>
+					<li>Never modify the body of an executed changeset without declaring validCheckSum.</li>
+					<li>A fix-up already executed under another path must, when moved into the reserved file, declare its original identity with logicalFilePath on its changeset line.</li>
+					<li>Execution order between prerun_db_* files is alphabetical by path ; runAfter does not apply to the preliminary run, which is also skipped in migration mode.</li>
+					<li>A prerun_db_* file at an unexpected location, misnamed, or owned by an undeclared component is a packaging fault, reported like an unresolved component (startup aborted when liquibase.safeRun=true).</li>
+				</ul>
+			</section>
 	</body>
 </document>
