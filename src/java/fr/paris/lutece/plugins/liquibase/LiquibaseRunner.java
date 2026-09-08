@@ -14,6 +14,7 @@ import javax.servlet.ServletException;
 import fr.paris.lutece.portal.service.database.AppConnectionService;
 import fr.paris.lutece.portal.service.init.IEarlyInitializationService;
 import fr.paris.lutece.portal.service.init.LuteceInitException;
+import fr.paris.lutece.plugins.liquibase.filters.PrerunScripts;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
@@ -100,8 +101,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
                      System.setProperty("liquibase.sql.logLevel", AppPropertiesService.getProperty(SQL_LOG_LEVEL, "DEBUG"));
 
                     boolean forceFailOnErrorFalse = !AppPropertiesService.getPropertyBoolean(FAIL_ON_ERROR, true);
-                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper, forceFailOnErrorFalse),
-                            database);)
+                    RegexpFilteringResourceAccessor resourceAccessor = new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper, forceFailOnErrorFalse);
+                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", resourceAccessor, database);)
                     {
                         LiquibaseRunnerContext.init(connection);
                         // neither the javadoc nor the tutorial are clear about an actual working replacement for update()
@@ -115,6 +116,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
                                  )
                             {
                                 AppLogService.info("LiquibaseRunner running in dry run mode. Output file : " + dryRunOutputFile);
+                                runPrerunScripts(connection, resourceAccessor, writer);
                                 liquibase.update(new Contexts(), writer);
                             }
                             
@@ -123,6 +125,7 @@ public class LiquibaseRunner implements IEarlyInitializationService
                         {
                             AppLogService.info("LiquibaseRunner applying database changes");
                             AppLogService.info("LiquibaseRunner enable migration mode   : " + LiquibaseRunnerContext.isEnableMigrationMode() );
+                            runPrerunScripts(connection, resourceAccessor, null);
                             liquibase.update(new Contexts());
                         }
                         // closing the context bumps plugin versions in the datastore
@@ -146,6 +149,36 @@ public class LiquibaseRunner implements IEarlyInitializationService
                 throw new RuntimeException("LiquibaseRunner failed stopping startup process");
             }
             AppLogService.info("LiquibaseRunner ended");
+        }
+    }
+
+    /**
+     * Executes the reserved pre-execution scripts (prerun_db_&lt;component&gt;.sql) in a preliminary liquibase
+     * update, BEFORE the main changelog is built and filtered (LUT-33327) : the main run's version
+     * resolution then sees the state they leave behind (e.g. datastore keys and DATABASECHANGELOG paths
+     * migrated after a plugin rename). Skipped in migration mode, like every script of the main changelog.
+     *
+     * A dedicated Database instance wraps the same JDBC connection so that liquibase services caching
+     * per-database state (ran changesets, locks) do not leak into the main run ; neither the Liquibase
+     * object nor that Database are closed here, closing them would close the shared connection still
+     * needed by the main run.
+     */
+    private void runPrerunScripts(Connection connection, RegexpFilteringResourceAccessor resourceAccessor, Writer dryRunWriter) throws Exception
+    {
+        if (LiquibaseRunnerContext.isEnableMigrationMode() || !PrerunScripts.any())
+        {
+            return;
+        }
+        AppLogService.info("LiquibaseRunner executing prerun_db scripts before the main changelog");
+        Database preDatabase = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+        Liquibase preliminary = new Liquibase("db/changelog-pre.xml", resourceAccessor, preDatabase);
+        if (dryRunWriter != null)
+        {
+            preliminary.update(new Contexts(), dryRunWriter);
+        }
+        else
+        {
+            preliminary.update(new Contexts());
         }
     }
 

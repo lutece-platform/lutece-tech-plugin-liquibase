@@ -179,6 +179,25 @@ public class LiquibaseRunnerContext
     }
 
     /**
+     * Reports a prerun_db_* file that does not sit at its component's expected path
+     * (sql/plugins/&lt;plugin&gt;[/modules/&lt;module&gt;]/plugin/prerun_db_&lt;component&gt;.sql), or whose component is
+     * declared by no plugin descriptor : a packaging fault, handled like an unresolved component (LUT-33232).
+     *
+     * @param path the misplaced or misnamed pre-execution SQL file path
+     */
+    public static void reportInvalidPrerun(String path)
+    {
+        AppLogService.error("LiquibaseRunner. SQL file {} claims to be a pre-execution script but does not match "
+                + "sql/plugins/<plugin>[/modules/<module>]/plugin/prerun_db_<component>.sql for a declared component : file NOT included", path);
+        if (bSafeRun)
+        {
+            throw new IllegalStateException("LiquibaseRunner : SQL file " + path
+                    + " claims to be a pre-execution script but does not match its component's expected path (see LUT-33327)."
+                    + " This is a packaging fault : startup aborted because liquibase.safeRun=true. Set liquibase.safeRun=false to only exclude such files.");
+        }
+    }
+
+    /**
      *
      * Looks the type of the last run script (create/init or update) in the DB.
      * 
