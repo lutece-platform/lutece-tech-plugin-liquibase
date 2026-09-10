@@ -36,7 +36,13 @@ public class TestIncludeAllFilter implements IncludeAllFilter
         } 
         else if (info == null)
         {
-            AppLogService.info("LiquibaseRunner could not determine what to do with file {}", changeLogPath);
+            // A packaging fault, like an unresolved component or a misplaced prerun script : the file
+            // claims a place under sql/ but matches no naming convention. Logged as an error for
+            // consistency with reportUnresolvedComponent / reportInvalidPrerun, but without aborting
+            // startup : the packaging already excludes such files, so reaching this point means the
+            // war was assembled by other means and the file simply cannot be run.
+            AppLogService.error("LiquibaseRunner. SQL file {} matches no Lutece SQL naming convention : file NOT included",
+                    changeLogPath);
             include = false;
         } else
         {
