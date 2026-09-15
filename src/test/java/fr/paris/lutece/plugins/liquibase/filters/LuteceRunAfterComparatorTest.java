@@ -3,14 +3,23 @@ package fr.paris.lutece.plugins.liquibase.filters;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import fr.paris.lutece.plugins.liquibase.PluginMeta;
+import fr.paris.lutece.utils.sql.RunAfterOrdering;
 
 /**
  * Validates the topological ordering produced by {@link LuteceRunAfterComparator} from runAfter directives
@@ -111,5 +120,40 @@ public class LuteceRunAfterComparatorTest
     public void bothFormsOfTheSamePathCompareEqualForTreeSetDeduplication()
     {
         assertEquals(0, new LuteceRunAfterComparator().compare("WEB-INF/classes/" + CCC_CREATE, CCC_CREATE));
+    }
+
+    /**
+     * Parity : the liquibase adapter (classpath scan, PluginMeta check) must order the fixtures exactly as
+     * the shared rules of library-sql-utils built directly on the same files, which is also what the Ant
+     * comparator of build-config applies.
+     */
+    @Test
+    public void adapterOrdersExactlyAsTheSharedRules() throws IOException
+    {
+        Path root = Paths.get("target", "test-classes", "sql");
+        List<RunAfterOrdering.Script> scripts;
+        try (Stream<Path> walk = Files.walk(root))
+        {
+            scripts = walk.filter(Files::isRegularFile).sorted().map(file -> (RunAfterOrdering.Script) new RunAfterOrdering.Script()
+            {
+                @Override
+                public String getPath()
+                {
+                    return "sql/" + root.relativize(file).toString().replace('\\', '/');
+                }
+
+                @Override
+                public InputStream open() throws IOException
+                {
+                    return Files.newInputStream(file);
+                }
+            }).collect(Collectors.toList());
+        }
+        RunAfterOrdering shared = RunAfterOrdering.build(scripts, target -> PluginMeta.getPluginVersion(target) != null, RunAfterOrdering.SILENT);
+
+        List<String> byAdapter = sortedFixtures();
+        List<String> byShared = new ArrayList<>(byAdapter);
+        byShared.sort(Comparator.comparing(shared::keyOf));
+        assertEquals(byShared, byAdapter);
     }
 }
