@@ -170,6 +170,14 @@ INSERT INTO genatt_entry_type (id_type, title, ...) VALUES (1, 'Radio button', .
 					<li>Directives chain to any depth : if A declares runAfter:B and B declares runAfter:C, the resulting order is C, then B, then A.</li>
 					<li>Invalid directives (conflicting targets inside one plugin, unknown or script-less target, self reference, involvement of core, dependency cycles) are ignored with an ERROR log and the plugin keeps its natural position.</li>
 				</ul>
+				<p>
+					The ordering rules are implemented once, in <code>library-sql-utils</code> (<code>RunAfterOrdering</code>, version 2.1.0 and later),
+					and shared with the Ant database initialization of <code>build-config</code> (target <code>all</code>, run by the
+					<code>maven-antrun-plugin</code> configuration of <code>lutece-global-pom</code>) : a database created by Ant, as on the
+					integration builds, gets the same script order as a database created by liquibase at startup. The
+					<code>specific</code> target of a manual <code>ant</code> does not apply the directive. A <code>prerun_db_*</code>
+					file is never read for a directive : declare it in an ordinary script of the plugin.
+				</p>
 			</section>
 
 			<section name="Pre-execution scripts : the reserved prerun_db file">

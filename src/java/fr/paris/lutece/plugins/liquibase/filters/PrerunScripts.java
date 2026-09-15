@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.utils.sql.RunAfterOrdering;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.Resource;
 
@@ -30,7 +31,8 @@ import liquibase.resource.Resource;
  * may not exist yet) ; a fix-up already executed under another path must declare its original identity with
  * logicalFilePath on its changeset line ; and, like any executed changeset, the body must not change
  * afterwards without a validCheckSum declaration. Execution order between prerun files is alphabetical by
- * path (runAfter does not apply to the preliminary run).
+ * path : runAfter does not apply to the preliminary run, and a runAfter directive is never read from a
+ * prerun file (a plugin declares it in an ordinary script).
  *
  * Selection is a pure path test : no file content is read. A file named prerun_db_* that does not sit at
  * its component's expected path is a packaging fault, reported like an unresolved component (startup
@@ -42,7 +44,6 @@ import liquibase.resource.Resource;
 public final class PrerunScripts
 {
     private static final String WEB_INF_CLASSES = "WEB-INF/classes/";
-    private static final String PRERUN_FILE_PREFIX = "prerun_db_";
     /** the expected shape : component directory, plugin/ subdirectory, file named after the component */
     private static final Pattern PRERUN_PATTERN = Pattern
             .compile("^sql/plugins/(?<plugin>[\\p{Alnum}\\-]+)(?:/modules/(?<module>[\\p{Alnum}]+))?/plugin/prerun_db_(?<component>[\\p{Alnum}\\-]+)\\.sql$");
@@ -54,12 +55,14 @@ public final class PrerunScripts
     {
     }
 
-    /** Whether the file name (whatever its location) claims to be a pre-execution script. */
+    /**
+     * Whether the file name (whatever its location) claims to be a pre-execution script. The reserved name
+     * is defined once, in library-sql-utils, so that the runAfter ordering (which never reads a directive
+     * from such a file) and this plugin agree on it.
+     */
     public static boolean isPrerunName(String path)
     {
-        String normalized = normalize(path);
-        String fileName = normalized.substring(normalized.lastIndexOf('/') + 1);
-        return fileName.startsWith(PRERUN_FILE_PREFIX) && fileName.endsWith(".sql");
+        return RunAfterOrdering.isPrerunScript(normalize(path));
     }
 
     /**
