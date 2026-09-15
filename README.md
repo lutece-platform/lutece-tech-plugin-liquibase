@@ -78,6 +78,8 @@ All the scripts of the declaring plugin (here `forms`) are then ordered after al
 * Directives chain to any depth: if A declares runAfter:B and B declares runAfter:C, the resulting order is C, then B, then A.
 * Invalid directives (conflicting targets inside one plugin, unknown or script-less target, self reference, involvement of core, dependency cycles) are ignored with an ERROR log and the plugin keeps its natural position.
 
+The ordering rules are implemented once, in `library-sql-utils` (`RunAfterOrdering`, version 2.1.0 and later), and shared with the Ant database initialization of `build-config` (target `all`, run by the `maven-antrun-plugin` configuration of `lutece-global-pom`): a database created by Ant, as on the integration builds, gets the same script order as a database created by liquibase at startup. The `specific` target of a manual `ant` does not apply the directive. A `prerun_db_*` file is never read for a directive: declare it in an ordinary script of the plugin.
+
 
 # Pre-execution scripts: the reserved prerun_db file
 
