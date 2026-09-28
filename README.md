@@ -61,7 +61,7 @@ By default the plugin does nothing. All configurations are defined in the `liqui
 
 # Script ordering: the runAfter header directive
 
-By default, liquibase executes the SQL files in alphabetical path order. When a plugin needs its scripts to run after those of another plugin (typically to insert rows into tables created by that other plugin), the historical workaround was to ship the SQL file directly in the other plugin's directory. This practice breaks version resolution: the inclusion of the file is then decided against the other plugin's version, never the owner's.
+The scripts of the core run first (create, init and upgrade), then the other SQL files in alphabetical path order: the core upgrade scripts (`sql/upgrade/`) would otherwise sort after `sql/plugins/`, and plugin scripts would run against a core schema not yet upgraded. When a plugin needs its scripts to run after those of another plugin (typically to insert rows into tables created by that other plugin), the historical workaround was to ship the SQL file directly in the other plugin's directory. This practice breaks version resolution: the inclusion of the file is then decided against the other plugin's version, never the owner's.
 
 The `runAfter` header directive replaces this practice. Declare it in the leading comment block (before the first changeset) of any script of the plugin:
 

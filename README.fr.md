@@ -61,7 +61,7 @@ Par défaut, le plugin ne fait rien. Toutes les configurations sont définies da
 
 # Ordre d'exécution : la directive d'en-tête runAfter
 
-Par défaut, liquibase exécute les fichiers SQL dans l'ordre alphabétique des chemins. Quand un plugin a besoin que ses scripts s'exécutent après ceux d'un autre plugin (typiquement pour insérer des lignes dans des tables créées par cet autre plugin), le contournement historique consistait à livrer le fichier SQL directement dans le répertoire de l'autre plugin. Cette pratique casse la résolution de version : l'inclusion du fichier est alors décidée par rapport à la version de l'autre plugin, jamais celle du propriétaire.
+Les scripts du cœur passent en premier (création, initialisation et montée de version), puis les autres fichiers SQL dans l'ordre alphabétique des chemins : sans cela, les scripts de montée de version du cœur (`sql/upgrade/`) passeraient après `sql/plugins/`, et les scripts des plugins s'exécuteraient sur un schéma du cœur pas encore migré. Quand un plugin a besoin que ses scripts s'exécutent après ceux d'un autre plugin (typiquement pour insérer des lignes dans des tables créées par cet autre plugin), le contournement historique consistait à livrer le fichier SQL directement dans le répertoire de l'autre plugin. Cette pratique casse la résolution de version : l'inclusion du fichier est alors décidée par rapport à la version de l'autre plugin, jamais celle du propriétaire.
 
 La directive d'en-tête `runAfter` remplace cette pratique. Elle se déclare dans le bloc de commentaires de tête (avant le premier changeset) de n'importe quel script du plugin :
 
