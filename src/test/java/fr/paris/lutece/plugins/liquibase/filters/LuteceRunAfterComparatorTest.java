@@ -108,6 +108,20 @@ public class LuteceRunAfterComparatorTest
     }
 
     @Test
+    public void coreScriptsRunBeforeEveryPluginScript()
+    {
+        String coreCreate = "sql/create_db_lutece_core.sql";
+        String coreInit = "sql/init_db_lutece_core.sql";
+        String coreUpgrade = "sql/upgrade/update_db_lutece_core-6.1.0-7.0.0.sql";
+        String pluginInit = "sql/plugins/mylutece/modules/database/core/init_core_mylutece_database.sql";
+        List<String> paths = new ArrayList<>(Arrays.asList(AAA_UPDATE, pluginInit, coreUpgrade, MMM_CREATE, coreInit, CCC_CREATE, coreCreate));
+        paths.sort(new LuteceRunAfterComparator());
+        assertEquals(Arrays.asList(coreCreate, coreInit, coreUpgrade), paths.subList(0, 3));
+        assertBefore(paths, coreUpgrade, pluginInit);
+        assertBefore(paths, CCC_CREATE, AAA_UPDATE);
+    }
+
+    @Test
     public void bothFormsOfTheSamePathCompareEqualForTreeSetDeduplication()
     {
         assertEquals(0, new LuteceRunAfterComparator().compare("WEB-INF/classes/" + CCC_CREATE, CCC_CREATE));

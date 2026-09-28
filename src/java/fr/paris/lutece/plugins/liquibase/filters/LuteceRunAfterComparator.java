@@ -27,8 +27,11 @@ import liquibase.resource.Resource;
 /**
  * Comparator for use in the liquibase changelog config (resourceComparator attribute of includeAll).
  *
- * Orders SQL files as liquibase does by default (alphabetical path order), except for plugins declaring
- * an explicit ordering directive in the leading comment block of any of their scripts :
+ * Orders the core scripts first, then every other SQL file in alphabetical path order, so that plugin scripts
+ * always run against an upgraded core schema.
+ *
+ * Plugins may also declare an explicit ordering directive in the leading comment block of any of their
+ * scripts :
  *
  * <pre>
  * --liquibase formatted sql
@@ -64,6 +67,8 @@ public class LuteceRunAfterComparator implements Comparator<String>
     // before the files of plugins relocated after IT (chained directives).
     private static final String AFTER_MARKER = "/~runAfter/";
     private static final String FILE_MARKER = "/~/";
+    private static final String CORE_RANK = "0";
+    private static final String OTHER_RANK = "1";
 
     /** normalized path -> sort key, for the files of relocated plugins only. Built on first use. */
     private Map<String, String> relocatedKeys;
@@ -81,10 +86,24 @@ public class LuteceRunAfterComparator implements Comparator<String>
         return keyOf(left).compareTo(keyOf(right));
     }
 
+    /**
+     * Returns the sort key of a path : a rank putting the core scripts first, then the path itself, or the
+     * relocated key of a plugin declaring a runAfter directive.
+     */
     private String keyOf(String path)
     {
         String normalized = normalize(path);
-        return relocatedKeys.getOrDefault(normalized, normalized);
+        String rank = isCoreScript(normalized) ? CORE_RANK : OTHER_RANK;
+        return rank + relocatedKeys.getOrDefault(normalized, normalized);
+    }
+
+    /**
+     * Tells whether a normalized path is a create, init or upgrade script of the core.
+     */
+    private static boolean isCoreScript(String path)
+    {
+        SqlPathInfo info = SqlPathInfo.parse(path);
+        return info != null && !info.isTheme() && CORE_PLUGIN_NAME.equals(info.getPlugin());
     }
 
     private static String normalize(String path)
