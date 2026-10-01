@@ -1,12 +1,16 @@
 package fr.paris.lutece.plugins.liquibase;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import fr.paris.lutece.portal.service.plugin.PluginService;
@@ -29,17 +33,20 @@ public class LiquibaseRunnerContext
     
     private static final String CORE_PLUGIN_NAME = "core";
     /**
-     * This (configurable) request determines whether liquibase has ever been run or not : it tests the existence of liquibase specific tables.
+     * Optional request replacing the lookup of the liquibase changelog table in the schema of the connection.
      * 
      * A result of 0 means no liquibase ever run
      */
     private static final String SQL__FIRST_LIQUIBASE_RUN_EVER = "liquibase.first.run.request";
     /**
-     * This (configurable) request determines whether the database is empty or not : it counts the number of tables in the current DB.
+     * Optional request replacing the lookup of any table in the schema of the connection.
      * 
      * A result of 0 means first run
      */
     private static final String SQL__EMPTY_DB = "liquibase.empty.db.request";
+    private static final String CHANGELOG_TABLE = "DATABASECHANGELOG";
+    private static final String ANY_TABLE = "%";
+    private static final String[] TABLE_TYPES = { "TABLE" };
 
    
     
@@ -97,10 +104,10 @@ public class LiquibaseRunnerContext
         bEnableMigrationMode=  AppPropertiesService.getPropertyBoolean("liquibase.migration.mode", false);
         bSafeRun=  AppPropertiesService.getPropertyBoolean(LIQUIBASE_SAFE_RUN, true);
         LiquibaseRunnerContext.connection = connection;
-        final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER, "select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';");
-        liquibaseNeverRan = runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
-        final String emptyDbRequest = AppPropertiesService.getProperty(SQL__EMPTY_DB, "SELECT count(*) FROM information_schema.tables where table_schema=database();");
-        emptyDb = runQuery(emptyDbRequest, r -> r.getInt(1)) == 0;
+        final String firstRunRequest = AppPropertiesService.getProperty(SQL__FIRST_LIQUIBASE_RUN_EVER);
+        liquibaseNeverRan = StringUtils.isBlank(firstRunRequest) ? !hasTable(connection, CHANGELOG_TABLE) : runQuery(firstRunRequest, r -> r.getInt(1)) == 0;
+        final String emptyDbRequest = AppPropertiesService.getProperty(SQL__EMPTY_DB);
+        emptyDb = StringUtils.isBlank(emptyDbRequest) ? !hasTable(connection, ANY_TABLE) : runQuery(emptyDbRequest, r -> r.getInt(1)) == 0;
         AppLogService.info("LiquibaseRunnerContext liquibaseNeverRan : {} , emptyDb : {}", liquibaseNeverRan, emptyDb);
     }
 
@@ -305,6 +312,26 @@ public class LiquibaseRunnerContext
 
 
 
+
+    /**
+     * Tells whether the catalog and schema of the connection hold a table matching a name pattern, the pattern being
+     * written in the case the database stores unquoted names in.
+     * 
+     * @param connection  the connection
+     * @param namePattern a table name pattern
+     * @return true if such a table exists
+     * @throws SQLException if the metadata cannot be read
+     */
+    static boolean hasTable(Connection connection, String namePattern) throws SQLException
+    {
+        DatabaseMetaData metaData = connection.getMetaData();
+        String pattern = metaData.storesLowerCaseIdentifiers() ? namePattern.toLowerCase(Locale.ROOT)
+                : metaData.storesUpperCaseIdentifiers() ? namePattern.toUpperCase(Locale.ROOT) : namePattern;
+        try (ResultSet tables = metaData.getTables(connection.getCatalog(), connection.getSchema(), pattern, TABLE_TYPES))
+        {
+            return tables.next();
+        }
+    }
 
     /**
      * Helper function to run queries and extract results.

@@ -45,13 +45,13 @@
 						</tr>
 						<tr>
 							<td><code>liquibase.first.run.request</code></td>
-							<td>Requête SQL pour vérifier s'il s'agit de la première exécution (vérifie la table DATABASECHANGELOG)</td>
-							<td>select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';</td>
+							<td>Requête SQL facultative pour vérifier s'il s'agit de la première exécution, à la place de la recherche de la table DATABASECHANGELOG dans le schéma de la connexion</td>
+							<td></td>
 						</tr>
 						<tr>
 							<td><code>liquibase.empty.db.request</code></td>
-							<td>Requête SQL pour vérifier si la base de données est vide</td>
-							<td>SELECT count(*) FROM information_schema.tables where table_schema=database();</td>
+							<td>Requête SQL facultative pour vérifier si la base de données est vide, à la place de la recherche d'une table dans le schéma de la connexion</td>
+							<td></td>
 						</tr>
 					</table>
 				</subsection>

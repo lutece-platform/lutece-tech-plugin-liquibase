@@ -45,13 +45,13 @@
 						</tr>
 						<tr>
 							<td><code>liquibase.first.run.request</code></td>
-							<td>SQL query to check if this is the first run (checks for DATABASECHANGELOG table)</td>
-							<td>select count(*) FROM information_schema.tables where table_name='DATABASECHANGELOG';</td>
+							<td>Optional SQL query to check if this is the first run, instead of looking up the DATABASECHANGELOG table in the schema of the connection</td>
+							<td></td>
 						</tr>
 						<tr>
 							<td><code>liquibase.empty.db.request</code></td>
-							<td>SQL query to check if the database is empty</td>
-							<td>SELECT count(*) FROM information_schema.tables where table_schema=database();</td>
+							<td>Optional SQL query to check if the database is empty, instead of looking up any table in the schema of the connection</td>
+							<td></td>
 						</tr>
 					</table>
 				</subsection>
