@@ -121,7 +121,7 @@
 						</tr>
 						<tr>
 							<td><code>liquibase.migration.mode</code></td>
-							<td>Enable migration mode to update plugin versions in datastore without applying liquibase changesets</td>
+							<td>Enable migration mode to update plugin and theme versions in datastore without applying liquibase changesets</td>
 							<td>false</td>
 						</tr>
 					</table>
