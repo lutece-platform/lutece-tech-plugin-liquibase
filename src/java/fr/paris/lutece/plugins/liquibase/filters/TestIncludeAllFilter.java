@@ -24,7 +24,7 @@ public class TestIncludeAllFilter implements IncludeAllFilter
         // no explicit check can be done here on the "file" represented by changeLogPath, since it might not be a file, but a classpath entry
         boolean include = false;
         SqlPathInfo info = SqlPathInfo.parse(changeLogPath);
-        if (LiquibaseRunnerContext.isEnableMigrationMode() || !changeLogPath.endsWith(".sql"))
+        if (!changeLogPath.endsWith(".sql"))
         {
             include = false;
         }
@@ -49,7 +49,11 @@ public class TestIncludeAllFilter implements IncludeAllFilter
             // Treating it as new used to run create_db_* scripts (and their DROP TABLE) on populated databases.
             final String declaredVersion = info.isTheme() ? AppPropertiesService.getProperty("themes." + info.getTheme() + ".version")
                     : PluginMeta.getPluginVersion(pluginName);
-            if (declaredVersion == null)
+            if (LiquibaseRunnerContext.isEnableMigrationMode())
+            {
+                include = false;
+            }
+            else if (declaredVersion == null)
             {
                 LiquibaseRunnerContext.reportUnresolvedComponent(changeLogPath, componentName);
                 include = false;

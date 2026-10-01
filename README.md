@@ -50,7 +50,7 @@ By default the plugin does nothing. All configurations are defined in the `liqui
 
 | Property| Description| Default Value|
 |-----------------|-----------------|-----------------|
-|  `liquibase.migration.mode` | Enable migration mode to update plugin versions in datastore without applying liquibase changesets| false|
+|  `liquibase.migration.mode` | Enable migration mode to update plugin and theme versions in datastore without applying liquibase changesets| false|
 
 ## Error Handling
 
