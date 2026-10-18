@@ -8,6 +8,10 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import fr.paris.lutece.portal.service.database.AppConnectionService;
 import fr.paris.lutece.portal.service.init.IEarlyInitializationService;
 import fr.paris.lutece.portal.service.init.LuteceInitException;
@@ -39,6 +43,8 @@ public class LiquibaseRunner implements IEarlyInitializationService
     private static final String SAFE_RUN = "liquibase.safeRun";
     private static final String LIQUIBASE_FILE_ERRORS="liquibase.fileErrors";
     private static final String FAIL_ON_ERROR = "liquibase.failOnError";
+    private static final String SQL_SELECT_SESSION_SQL_MODE = "SELECT @@SESSION.sql_mode";
+    private static final String SQL_SET_SESSION_SQL_MODE = "SET SESSION sql_mode = ?";
 
     @Override
     public void process()
@@ -99,7 +105,11 @@ public class LiquibaseRunner implements IEarlyInitializationService
 
                     boolean forceFailOnErrorFalse = !AppPropertiesService.getPropertyBoolean(FAIL_ON_ERROR, true);
                     RegexpFilteringResourceAccessor resourceAccessor = new RegexpFilteringResourceAccessor(new ClassLoaderResourceAccessor(), helper, forceFailOnErrorFalse);
-                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", resourceAccessor, database);)
+                    // The connection comes from the pool of the application and goes back to it: the SQL mode of its session is restored
+                    // before liquibase closes the connection, a script that changes it (SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO')
+                    // would change every later SQL run on it
+                    try (Liquibase liquibase = new Liquibase("db/changelog.xml", resourceAccessor, database);
+                            SessionSqlMode sessionSqlMode = new SessionSqlMode(connection);)
                     {
                         LiquibaseRunnerContext.init(connection);
                         // neither the javadoc nor the tutorial are clear about an actual working replacement for update()
@@ -176,6 +186,89 @@ public class LiquibaseRunner implements IEarlyInitializationService
         else
         {
             preliminary.update(new Contexts());
+        }
+    }
+
+    /**
+     * SQL mode of the session of a connection, restored when closed
+     */
+    static final class SessionSqlMode implements AutoCloseable
+    {
+        private final Connection _connection;
+        private final String _strSqlMode;
+
+        /**
+         * Reads the SQL mode of the session
+         *
+         * @param connection
+         *            the connection
+         */
+        SessionSqlMode(Connection connection)
+        {
+            _connection = connection;
+            _strSqlMode = readSessionSqlMode(connection);
+        }
+
+        /**
+         * Restores the SQL mode of the session
+         */
+        @Override
+        public void close()
+        {
+            restoreSessionSqlMode(_connection, _strSqlMode);
+        }
+    }
+
+    /**
+     * Reads the SQL mode of the session of a MySQL or MariaDB connection
+     *
+     * @param connection
+     *            the connection
+     * @return the SQL mode, or null for another database or if it cannot be read
+     */
+    static String readSessionSqlMode(Connection connection)
+    {
+        try
+        {
+            String strUrl = connection.getMetaData().getURL();
+            if (strUrl == null || !(strUrl.startsWith("jdbc:mysql:") || strUrl.startsWith("jdbc:mariadb:")))
+            {
+                return null;
+            }
+            try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(SQL_SELECT_SESSION_SQL_MODE))
+            {
+                return resultSet.next() ? resultSet.getString(1) : null;
+            }
+        }
+        catch (SQLException e)
+        {
+            AppLogService.error("LiquibaseRunner could not read the SQL mode of the session", e);
+            return null;
+        }
+    }
+
+    /**
+     * Restores the SQL mode of the session of a MySQL or MariaDB connection, before it goes back to the pool
+     *
+     * @param connection
+     *            the connection
+     * @param strSqlMode
+     *            the SQL mode read before the run, null to do nothing
+     */
+    static void restoreSessionSqlMode(Connection connection, String strSqlMode)
+    {
+        if (strSqlMode == null)
+        {
+            return;
+        }
+        try (PreparedStatement statement = connection.prepareStatement(SQL_SET_SESSION_SQL_MODE))
+        {
+            statement.setString(1, strSqlMode);
+            statement.execute();
+        }
+        catch (SQLException e)
+        {
+            AppLogService.error("LiquibaseRunner could not restore the SQL mode of the session", e);
         }
     }
 
